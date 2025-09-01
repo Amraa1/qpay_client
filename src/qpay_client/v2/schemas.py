@@ -216,7 +216,7 @@ class P2PTransaction(BaseModel):
     settlement_status: str
 
 
-class Row(BaseModel):
+class Payment(BaseModel):
     payment_id: Decimal
     payment_status: PaymentStatus
     payment_amount: Decimal
@@ -238,7 +238,7 @@ class Offset(BaseModel):
 class PaymentCheckResponse(BaseModel):
     count: Optional[Decimal] = None
     paid_amount: Optional[Decimal] = None
-    rows: Optional[List[Row]] = None
+    rows: Optional[List[Payment]] = None
 
 
 class PaymentCheckRequest(BaseModel):
@@ -247,21 +247,7 @@ class PaymentCheckRequest(BaseModel):
     offset: Optional[Offset] = Field(default_factory=Offset)
 
 
-class PaymentGetResponse(BaseModel):
-    payment_id: Decimal
-    payment_status: PaymentStatus
-    payment_amount: Decimal
-    trx_fee: Decimal
-    payment_currency: Currency
-    payment_wallet: str
-    payment_type: str
-    next_payment_date: Optional[date] = None
-    next_payment_datetime: Optional[datetime] = None
-    card_transactions: List[CardTransaction]
-    p2p_transactions: List[P2PTransaction]
-
-
-class CancelPaymentRequest(Row):
+class CancelPaymentRequest(Payment):
     callback_url: str
     note: str
 
