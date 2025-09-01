@@ -45,24 +45,20 @@ class BankCode(StrEnum):
     test_bank = "100000"
 
 
-class CreateSimpleInvoiceRequest(BaseModel):
-    invoice_code: str = Field(examples=["TEST_INVOICE"], max_length=45)
-    sender_invoice_no: str = Field(examples=["123"], max_length=45)
-    invoice_receiver_code: str = Field(max_length=45)
-    invoice_description: str = Field(max_length=255)
-    sender_branch_code: Optional[str] = Field(default=None, max_length=45)
-    amount: Decimal = Field(gt=0)
-    callback_url: str = Field(max_length=255)
+class ObjectTypeNum(StrEnum):
+    invoice = "INVOICE"
+    qr = "QR"
+    item = "ITEM"
 
 
-class AccessTokenResponse(BaseModel):
+class TokenResponse(BaseModel):
     token_type: str
-    refresh_expires_in: date
-    refresh_token: str
     access_token: str
-    expires_in: int
+    expires_in: float
+    refresh_token: str
+    refresh_expires_in: float
     scope: str
-    not_before_policy: str
+    not_before_policy: str = Field(..., alias="not-before-policy")
     session_state: str
 
 
@@ -151,7 +147,17 @@ class SenderStaffData(BaseModel):
     phone: Optional[str] = Field(default=None, max_length=20)
 
 
-class CreateInvoiceRequest(BaseModel):
+class InvoiceCreateSimpleRequest(BaseModel):
+    invoice_code: str = Field(examples=["TEST_INVOICE"], max_length=45)
+    sender_invoice_no: str = Field(examples=["123"], max_length=45)
+    invoice_receiver_code: str = Field(max_length=45)
+    invoice_description: str = Field(max_length=255)
+    sender_branch_code: Optional[str] = Field(default=None, max_length=45)
+    amount: Decimal = Field(gt=0)
+    callback_url: str = Field(max_length=255)
+
+
+class InvoiceCreateRequest(BaseModel):
     invoice_code: str = Field(max_length=45)
     sender_invoice_no: str = Field(max_length=45)
     sender_branch_code: Optional[str] = Field(default=None, max_length=45)
@@ -235,12 +241,6 @@ class PaymentCheckResponse(BaseModel):
     rows: Optional[List[Row]] = None
 
 
-class ObjectTypeNum(StrEnum):
-    invoice = "INVOICE"
-    qr = "QR"
-    item = "ITEM"
-
-
 class PaymentCheckRequest(BaseModel):
     object_type: ObjectTypeNum
     object_id: str = Field(max_length=50)
@@ -264,3 +264,57 @@ class PaymentGetResponse(BaseModel):
 class CancelPaymentRequest(Row):
     callback_url: str
     note: str
+
+
+class EbarimtCreateRequest(BaseModel):
+    payment_id: str
+    ebarimt_receiver_type: str
+    ebarimt_receiver: Optional[str] = None
+    callback_url: Optional[str] = None
+
+
+class Ebarimt(BaseModel):
+    id: str
+    ebarimt_by: str
+    g_wallet_id: str
+    g_wallet_customer_id: str
+    ebarim_receiver_type: str
+    ebarimt_receiver: str
+    ebarimt_district_code: str
+    ebarimt_bill_type: str
+    g_merchant_id: str
+    merchant_branch_code: str
+    merchant_terminal_code: str
+    merchant_staff_code: str
+    merchant_register: Decimal
+    g_payment_id: Decimal
+    paid_by: str
+    object_type: str
+    object_id: str
+    amount: Decimal
+    vat_amount: Decimal
+    city_tax_amount: Decimal
+    ebarimt_qr_data: str
+    ebarimt_lottery: str
+    note: str
+    ebarimt_status: str
+    ebarimt_status_date: datetime
+    tax_type: str
+    created_by: str
+    created_date: datetime
+    updated_by: str
+    updated_date: datetime
+    status: bool
+
+
+class PaymentListRequest(BaseModel):
+    object_type: str
+    object_id: str
+    start_date: datetime
+    end_date: datetime
+    offset: Offset
+
+
+class PaymentCancelRequest(BaseModel):
+    callback_url: Optional[str] = None
+    note: Optional[str] = None
