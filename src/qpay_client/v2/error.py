@@ -11,3 +11,13 @@ class QPayError(Exception):
 
     def __repr__(self) -> str:
         return self.exception_message
+
+
+class ClientConfigError(Exception):
+    """
+    Raised when the client is configured wrong.
+    """
+
+    def __init__(self, *attr) -> None:
+        self.exception_message = f"incorrect attributes: {attr}"
+        super().__init__(self.exception_message)
