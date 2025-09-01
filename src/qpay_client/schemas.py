@@ -1,0 +1,266 @@
+from typing import Optional, Dict, List
+from pydantic import BaseModel, Field, ConfigDict
+from datetime import date, datetime
+from decimal import Decimal
+from enum import StrEnum
+
+
+class Currency(StrEnum):
+    mnt = "MNT"
+    usd = "USD"
+    cny = "CNY"
+    jpy = "JPY"
+    rub = "RUB"
+    eur = "EUR"
+
+
+class PaymentStatus(StrEnum):
+    new = "NEW"
+    failed = "FAILED"
+    paid = "PAID"
+    partial = "PARTIAL"
+    refunded = "REFUNDED"
+
+
+class BankCode(StrEnum):
+    bank_of_mongolia = "010000"
+    capital_bank = "020000"
+    trade_and_development_bank_of_mongolia = "040000"
+    khan_bank = "050000"
+    golomt_bank = "150000"
+    trans_bank = "190000"
+    arig_bank = "210000"
+    credit_bank = "220000"
+    nib_bank = "290000"
+    capitron_bank = "300000"
+    khas_bank = "320000"
+    chingiskhan_bank = "330000"
+    state_bank = "340000"
+    national_development_bank = "360000"
+    bogd_bank = "380000"
+    state_fund = "900000"
+    mobi_finance = "500000"
+    m_bank = "390000"
+    invescore = "993000"
+    test_bank = "100000"
+
+
+class CreateSimpleInvoiceRequest(BaseModel):
+    invoice_code: str = Field(examples=["TEST_INVOICE"], max_length=45)
+    sender_invoice_no: str = Field(examples=["123"], max_length=45)
+    invoice_receiver_code: str = Field(max_length=45)
+    invoice_description: str = Field(max_length=255)
+    sender_branch_code: Optional[str] = Field(default=None, max_length=45)
+    amount: Decimal = Field(gt=0)
+    callback_url: str = Field(max_length=255)
+
+
+class AccessTokenResponse(BaseModel):
+    token_type: str
+    refresh_expires_in: date
+    refresh_token: str
+    access_token: str
+    expires_in: int
+    scope: str
+    not_before_policy: str
+    session_state: str
+
+
+class QPayDeeplink(BaseModel):
+    name: str
+    description: str
+    logo: str
+    link: str
+
+
+class Address(BaseModel):
+    city: Optional[str] = Field(default=None, max_length=100)
+    district: Optional[str] = Field(default=None, max_length=100)
+    street: Optional[str] = Field(default=None, max_length=100)
+    building: Optional[str] = Field(default=None, max_length=100)
+    address: Optional[str] = Field(default=None, max_length=100)
+    zipcode: Optional[str] = Field(default=None, max_length=20)
+    longitude: Optional[str] = Field(default=None, max_length=20)
+    latitude: Optional[str] = Field(default=None, max_length=20)
+
+
+class SenderTerminalData(BaseModel):
+    name: Optional[str] = Field(default=None, max_length=100)
+
+
+class InvoiceReceiverData(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    registration_number: Optional[str] = Field(
+        default=None, alias="register", max_length=20
+    )
+    name: Optional[str] = Field(default=None, max_length=100)
+    email: Optional[str] = Field(default=None, max_length=255)
+    phone: Optional[str] = Field(default=None, max_length=20)
+    address: Optional[Address] = None
+
+
+class SenderBranchData(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    registration_number: Optional[str] = Field(
+        default=None, alias="register", max_length=20
+    )
+    name: Optional[str] = Field(default=None, max_length=100)
+    email: Optional[str] = Field(default=None, max_length=255)
+    phone: Optional[str] = Field(default=None, max_length=20)
+    address: Optional[Address] = None
+
+
+class Discount(BaseModel):
+    discount_code: Optional[str] = Field(default=None, max_length=45)
+    description: str = Field(max_length=100)
+    amount: Decimal = Field(max_digits=20)
+    note: Optional[str] = Field(default=None, max_length=255)
+
+
+class Surcharge(BaseModel):
+    surcharge_code: Optional[str] = Field(default=None, max_length=45)
+    description: str = Field(max_length=100)
+    amount: Decimal = Field(max_digits=20)
+    note: Optional[str] = Field(default=None, max_length=255)
+
+
+class Tax(BaseModel):
+    tax_code: Optional[str] = Field(default=None, max_length=20)
+    description: Optional[str] = Field(default=None, max_length=100)
+    amount: Decimal
+    note: Optional[str] = Field(default=None, max_length=255)
+
+
+class Line(BaseModel):
+    sender_product_code: Optional[str]
+    tax_product_code: Optional[str]
+    line_description: str = Field(max_length=255)
+    line_quantity: Decimal = Field(max_digits=20)
+    line_unit_price: Decimal = Field(max_digits=20)
+    note: Optional[str] = Field(default=None, max_length=100)
+    discounts: Optional[List[Discount]] = None
+    surcharges: Optional[List[Surcharge]] = None
+    taxes: Optional[List[Tax]] = None
+
+
+class SenderStaffData(BaseModel):
+    name: Optional[str] = Field(default=None, max_length=100)
+    email: Optional[str] = Field(default=None, max_length=255)
+    phone: Optional[str] = Field(default=None, max_length=20)
+
+
+class CreateInvoiceRequest(BaseModel):
+    invoice_code: str = Field(max_length=45)
+    sender_invoice_no: str = Field(max_length=45)
+    sender_branch_code: Optional[str] = Field(default=None, max_length=45)
+    sender_branch_data: Optional[SenderBranchData] = None
+    sender_staff_code: Optional[str] = Field(default=None, max_length=100)
+    sender_staff_data: Optional[SenderStaffData] = None
+    sender_terminal_code: Optional[str] = Field(default=None, max_length=45)
+    sender_terminal_data: Optional[SenderTerminalData] = None
+    invoice_receiver_code: str = Field(max_length=45)
+    invoice_receiver_data: Optional[InvoiceReceiverData] = None
+    invoice_description: str = Field(max_length=255)
+    invoice_due_date: Optional[date] = None
+    enable_expiry: Optional[bool] = None
+    expiry_date: Optional[date] = None
+    calculate_vat: Optional[bool] = Field(default=None)
+    tax_customer_code: Optional[str] = None
+    line_tax_code: Optional[str] = Field(default=None)
+    allow_partial: Optional[bool] = Field(default=None)
+    minimum_amount: Optional[Decimal] = None
+    allow_exceed: Optional[bool] = Field(default=None)
+    maximum_amount: Optional[Decimal] = None
+    amount: Optional[Decimal] = Field(default=None)
+    callback_url: str = Field(max_length=255)
+    note: Optional[str] = Field(default=None, max_length=1000)
+    lines: Optional[List[Line]] = None
+    transactions: Optional[List] = None
+
+
+class CreateInvoiceResponse(BaseModel):
+    invoice_id: str
+    qr_text: str
+    qr_image: str
+    qPay_shortUrl: str
+    urls: List[QPayDeeplink]
+
+
+class CardTransaction(BaseModel):
+    card_type: str
+    is_cross_border: bool
+    amount: Decimal
+    currency: Currency
+    date: datetime
+    status: str
+    settlement_status: str
+    settlement_status_date: datetime
+
+
+class P2PTransaction(BaseModel):
+    transaction_bank_code: BankCode
+    account_bank_code: BankCode
+    account_bank_name: str
+    account_number: str
+    status: str
+    amount: Decimal
+    currency: Currency
+    settlement_status: str
+
+
+class Row(BaseModel):
+    payment_id: Decimal
+    payment_status: PaymentStatus
+    payment_amount: Decimal
+    trx_fee: Decimal
+    payment_currency: Currency
+    payment_wallet: str
+    payment_type: str
+    next_payment_date: Optional[date] = None
+    next_payment_datetime: Optional[datetime] = None
+    card_transactions: List[CardTransaction]
+    p2p_transactions: List[P2PTransaction]
+
+
+class Offset(BaseModel):
+    page_number: Decimal = Field(default=Decimal(1), ge=1, le=100)
+    page_limit: Decimal = Field(default=Decimal(10), ge=1, le=100)
+
+
+class PaymentCheckResponse(BaseModel):
+    count: Optional[Decimal] = None
+    paid_amount: Optional[Decimal] = None
+    rows: Optional[List[Row]] = None
+
+
+class ObjectTypeNum(StrEnum):
+    invoice = "INVOICE"
+    qr = "QR"
+    item = "ITEM"
+
+
+class PaymentCheckRequest(BaseModel):
+    object_type: ObjectTypeNum
+    object_id: str = Field(max_length=50)
+    offset: Optional[Offset] = Field(default_factory=Offset)
+
+
+class PaymentGetResponse(BaseModel):
+    payment_id: Decimal
+    payment_status: PaymentStatus
+    payment_amount: Decimal
+    trx_fee: Decimal
+    payment_currency: Currency
+    payment_wallet: str
+    payment_type: str
+    next_payment_date: Optional[date] = None
+    next_payment_datetime: Optional[datetime] = None
+    card_transactions: List[CardTransaction]
+    p2p_transactions: List[P2PTransaction]
+
+
+class CancelPaymentRequest(Row):
+    callback_url: str
+    note: str
