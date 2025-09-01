@@ -29,6 +29,7 @@ class QPayClient:
 
     def __init__(self, timeout=30):
         self._timeout = timeout
+        self._client = httpx.AsyncClient(timeout=timeout)
         self._access_token = None
         self._access_token_expiry = 0
         self._refresh_token = None
@@ -46,8 +47,8 @@ class QPayClient:
         }
 
     # Auth
-    def authenticate(self):
-        response = httpx.post(
+    async def authenticate(self):
+        response = await self._client.post(
             BASE_URL + "/auth/token",
             auth=(QPAY_USERNAME, QPAY_PASSWORD),
             timeout=self._timeout,
@@ -65,12 +66,12 @@ class QPayClient:
         self.not_before_policy = data.not_before_policy
         self.session_state = data.session_state
 
-    def refresh_access_token(self):
+    async def refresh_access_token(self):
         if self._refresh_token is None or self._refresh_token_expiry > time.time():
-            self.authenticate()
+            await self.authenticate()
             return
 
-        response = httpx.post(
+        response = await self._client.post(
             BASE_URL + "/auth/refresh",
             headers={"Authorization": f"Bearer {self._refresh_token}"},
             timeout=self._timeout,
@@ -84,20 +85,20 @@ class QPayClient:
             self._token_expiry = data.expires_in - self._token_leeway
             self._refresh_token_expiry = data.refresh_expires_in - self._token_leeway
         else:
-            self.authenticate()
+            await self.authenticate()
 
-    def get_token(self):
+    async def get_token(self):
         if self._access_token is None:
-            self.authenticate()
+            await self.authenticate()
         elif self._token_expiry > time.time():
-            self.refresh_access_token()
+            await self.refresh_access_token()
         return self._access_token
 
     # Invoice
-    def invoice_create(
+    async def invoice_create(
         self, create_invoice_request: InvoiceCreateRequest | InvoiceCreateSimpleRequest
     ):
-        response = httpx.post(
+        response = await self._client.post(
             BASE_URL + "/invoice",
             headers=self.headers,
             data=create_invoice_request.model_dump(),
@@ -107,11 +108,11 @@ class QPayClient:
         data = CreateInvoiceResponse.model_validate_json(response.json())
         return data
 
-    def invoice_cancel(
+    async def invoice_cancel(
         self,
         invoice_id: str,
     ):
-        response = httpx.delete(
+        response = await self._client.delete(
             BASE_URL + "/invoice/" + invoice_id,
             headers=self.headers,
             timeout=self._timeout,
@@ -119,8 +120,8 @@ class QPayClient:
         return response.json()
 
     # Payment
-    def payment_get(self, payment_id: str):
-        response = httpx.get(
+    async def payment_get(self, payment_id: str):
+        response = await self._client.get(
             BASE_URL + "/payment/" + payment_id,
             headers=self.headers,
             timeout=self._timeout,
@@ -128,8 +129,8 @@ class QPayClient:
         validated_response = PaymentGetResponse.model_validate(response.json())
         return validated_response
 
-    def payment_check(self, payment_check_request: PaymentCheckRequest):
-        response = httpx.post(
+    async def payment_check(self, payment_check_request: PaymentCheckRequest):
+        response = await self._client.post(
             BASE_URL + "/payment/check",
             data=payment_check_request.model_dump(),
             headers=self.headers,
@@ -139,24 +140,24 @@ class QPayClient:
         validated_response = PaymentCheckResponse.model_validate_json(response.json())
         return validated_response
 
-    def payment_cancel(self, payment_id: str):
-        response = httpx.delete(
+    async def payment_cancel(self, payment_id: str):
+        response = await self._client.delete(
             BASE_URL + "/payment/cancel/" + payment_id,
             headers=self.headers,
             timeout=self._timeout,
         )
         return response.json()
 
-    def payment_refund(self, payment_id: str):
-        response = httpx.delete(
+    async def payment_refund(self, payment_id: str):
+        response = await self._client.delete(
             BASE_URL + "/payment/refund/" + payment_id,
             headers=self.headers,
             timeout=self._timeout,
         )
         return response.json()
 
-    def payment_list(self, payment_list_request: PaymentListRequest):
-        response = httpx.post(
+    async def payment_list(self, payment_list_request: PaymentListRequest):
+        response = await self._client.post(
             BASE_URL + "/payment/list",
             data=payment_list_request.model_dump(),
             headers=self.headers,
@@ -167,8 +168,8 @@ class QPayClient:
         return validated_response
 
     # ebarimt
-    def ebarimt_create(self, ebarimt_create_request: EbarimtCreateRequest):
-        response = httpx.post(
+    async def ebarimt_create(self, ebarimt_create_request: EbarimtCreateRequest):
+        response = await self._client.post(
             BASE_URL + "/ebarimt/create",
             data=ebarimt_create_request.model_dump(),
             headers=self.headers,
@@ -178,8 +179,8 @@ class QPayClient:
         validated_response = Ebarimt.model_validate_json(response.json())
         return validated_response
 
-    def ebarimt_get(self, barimt_id: str):
-        response = httpx.get(
+    async def ebarimt_get(self, barimt_id: str):
+        response = await self._client.get(
             BASE_URL + "/ebarimt/" + barimt_id,
             headers=self.headers,
             timeout=self._timeout,
@@ -189,5 +190,5 @@ class QPayClient:
         return validated_response
 
 
-# Global qpay client
+# Singleton instance
 qpay_client = QPayClient()
