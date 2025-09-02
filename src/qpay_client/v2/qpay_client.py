@@ -1,5 +1,5 @@
 import os
-from httpx import AsyncClient, BasicAuth, Response
+from httpx import AsyncClient, BasicAuth, Response, Timeout
 import time
 from .schemas import (
     InvoiceCreateRequest,
@@ -61,7 +61,7 @@ class QPayClient:
         base_url: Optional[str] = None,
         is_sandbox: Optional[bool] = None,
         token_leeway=60,
-        timeout=30,
+        timeout=Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0),
         logger=logger,
     ):
         if is_sandbox is None:
@@ -85,7 +85,6 @@ class QPayClient:
         self._scope = ""
         self._not_before_policy = ""
         self._session_state = ""
-        self._timeout = timeout or 30
         self._token_leeway = token_leeway or 60
         self._logger = logger
 
@@ -110,7 +109,6 @@ class QPayClient:
         response = await self._client.post(
             BASE_URL + "/auth/token",
             auth=self._auth_credentials,
-            timeout=self._timeout,
         )
         # Raises status error if there is error
         self._check_error(response)
@@ -133,7 +131,6 @@ class QPayClient:
         response = await self._client.post(
             BASE_URL + "/auth/refresh",
             headers={"Authorization": f"Bearer {self._refresh_token}"},
-            timeout=self._timeout,
         )
 
         self._check_error(response)
@@ -163,7 +160,6 @@ class QPayClient:
             BASE_URL + "/invoice",
             headers=await self.headers,
             data=create_invoice_request.model_dump(),
-            timeout=self._timeout,
         )
 
         self._check_error(response)
@@ -178,11 +174,10 @@ class QPayClient:
         response = await self._client.delete(
             BASE_URL + "/invoice/" + invoice_id,
             headers=await self.headers,
-            timeout=self._timeout,
         )
-        
+
         self._check_error(response)
-        
+
         return response.json()
 
     # Payment
@@ -190,11 +185,10 @@ class QPayClient:
         response = await self._client.get(
             BASE_URL + "/payment/" + payment_id,
             headers=await self.headers,
-            timeout=self._timeout,
         )
-        
+
         self._check_error(response)
-        
+
         validated_response = Payment.model_validate(response.json())
         return validated_response
 
@@ -203,9 +197,8 @@ class QPayClient:
             BASE_URL + "/payment/check",
             data=payment_check_request.model_dump(),
             headers=await self.headers,
-            timeout=self._timeout,
         )
-        
+
         self._check_error(response)
 
         validated_response = PaymentCheckResponse.model_validate_json(response.json())
@@ -215,22 +208,20 @@ class QPayClient:
         response = await self._client.delete(
             BASE_URL + "/payment/cancel/" + payment_id,
             headers=await self.headers,
-            timeout=self._timeout,
         )
-        
+
         self._check_error(response)
-        
+
         return response.json()
 
     async def payment_refund(self, payment_id: str):
         response = await self._client.delete(
             BASE_URL + "/payment/refund/" + payment_id,
             headers=await self.headers,
-            timeout=self._timeout,
         )
-        
+
         self._check_error(response)
-        
+
         return response.json()
 
     async def payment_list(self, payment_list_request: PaymentListRequest):
@@ -238,9 +229,8 @@ class QPayClient:
             BASE_URL + "/payment/list",
             data=payment_list_request.model_dump(),
             headers=await self.headers,
-            timeout=self._timeout,
         )
-        
+
         self._check_error(response)
 
         validated_response = PaymentCheckResponse.model_validate_json(response.json())
@@ -252,9 +242,8 @@ class QPayClient:
             BASE_URL + "/ebarimt/create",
             data=ebarimt_create_request.model_dump(),
             headers=await self.headers,
-            timeout=self._timeout,
         )
-        
+
         self._check_error(response)
 
         validated_response = Ebarimt.model_validate_json(response.json())
@@ -264,9 +253,8 @@ class QPayClient:
         response = await self._client.get(
             BASE_URL + "/ebarimt/" + barimt_id,
             headers=await self.headers,
-            timeout=self._timeout,
         )
-        
+
         self._check_error(response)
 
         validated_response = Ebarimt.model_validate_json(response.json())
