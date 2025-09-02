@@ -1,7 +1,7 @@
 [project]
 name = "qpay-client"
 version = "0.1.0"
-description = "Add your description here"
+description = "Async qpay payment API client"
 readme = "README.md"
 authors = [
     { name = "Amraa1", email = "amarsanaaganbaatar0409@gmail.com" }
