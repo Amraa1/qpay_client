@@ -1,2 +1,4 @@
-def hello() -> str:
-    return "Hello from qpay-client!"
+from .v2.qpay_client import QPayClient
+
+
+__all__ = ["QPayClient"]
