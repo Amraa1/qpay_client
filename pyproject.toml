@@ -11,7 +11,7 @@ dependencies = [
     "httpx>=0.28.1",
     "pydantic>=2.11.7",
 ]
-license = { file = "LICENCE" }
+license = { file = "LICENCE.txt" }
 
 [build-system]
 requires = ["uv_build>=0.8.14,<0.9.0"]
