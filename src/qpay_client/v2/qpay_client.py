@@ -1,4 +1,3 @@
-import os
 from httpx import AsyncClient, BasicAuth, Response, Timeout
 import time
 from .schemas import (
@@ -13,39 +12,16 @@ from .schemas import (
     EbarimtCreateRequest,
     Ebarimt,
 )
-from .error import QPayError, ClientConfigError
-from typing import Optional
-import enum
+from .error import QPayError
+from typing import Literal, Optional
 import logging
-
-
-class Environment(enum.Enum):
-    sandbox = 1
-    production = 2
 
 
 logger = logging.getLogger("qpay")
 
-
-QPAY_USERNAME = os.getenv("QPAY_USERNAME", "TEST_MERCHANT")
-QPAY_PASSWORD = os.getenv("QPAY_PASSWORD", "123456")
-QPAY_ENV = os.getenv("QPAY_ENV", "sandbox")
-
-if QPAY_ENV == "production":
-    is_sandbox = False
-elif QPAY_ENV == "sandbox":
-    is_sandbox = True
-else:
-    raise ValueError("QPAY_ENV must either sandbox or production")
-
-
-# Env based settings
-if is_sandbox:
-    BASE_URL = "https://merchant-sandbox.qpay.mn/v2"
-else:
-    BASE_URL = "https://merchant.qpay.mn/v2"
-
-is_prod = not is_sandbox
+type QPayBaseUrl = Literal[
+    "https://merchant-sandbox.qpay.mn/v2", "https://merchant.qpay.mn/v2"
+]
 
 
 class QPayClient:
@@ -56,28 +32,30 @@ class QPayClient:
     def __init__(
         self,
         *,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-        base_url: Optional[str] = None,
-        is_sandbox: Optional[bool] = None,
-        token_leeway=60,
+        username: str = "TEST_MERCHANT",
+        password: str = "123456",
+        is_sandbox: bool = True,
         timeout=Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0),
+        base_url: Optional[QPayBaseUrl] = None,
+        token_leeway=60,
         logger=logger,
     ):
-        if is_sandbox is None:
-            is_sandbox = not is_prod
-
-        if is_sandbox:
-            self._env = Environment.sandbox
-        elif not is_sandbox:
-            self._env = Environment.production
-
-        self._base_url = base_url or BASE_URL
-        self._client = AsyncClient(timeout=timeout)
         self._auth_credentials = BasicAuth(
-            username=username or QPAY_USERNAME,
-            password=password or QPAY_PASSWORD,
+            username=username,
+            password=password,
         )
+        self._client = AsyncClient(timeout=timeout)
+
+        if base_url:
+            # user supplied base_url
+            self._base_url = base_url
+        elif is_sandbox:
+            # dev environment
+            self._base_url = "https://merchant-sandbox.qpay.mn/v2"
+        else:
+            # prod environment
+            self._base_url = "https://merchant.qpay.mn/v2"
+
         self._access_token = ""
         self._access_token_expiry = 0
         self._refresh_token = ""
@@ -107,7 +85,7 @@ class QPayClient:
     # Auth
     async def authenticate(self):
         response = await self._client.post(
-            BASE_URL + "/auth/token",
+            self._base_url + "/auth/token",
             auth=self._auth_credentials,
         )
         # Raises status error if there is error
@@ -129,7 +107,7 @@ class QPayClient:
             return
 
         response = await self._client.post(
-            BASE_URL + "/auth/refresh",
+            self._base_url + "/auth/refresh",
             headers={"Authorization": f"Bearer {self._refresh_token}"},
         )
 
@@ -157,7 +135,7 @@ class QPayClient:
         self, create_invoice_request: InvoiceCreateRequest | InvoiceCreateSimpleRequest
     ):
         response = await self._client.post(
-            BASE_URL + "/invoice",
+            self._base_url + "/invoice",
             headers=await self.headers,
             data=create_invoice_request.model_dump(),
         )
@@ -172,7 +150,7 @@ class QPayClient:
         invoice_id: str,
     ):
         response = await self._client.delete(
-            BASE_URL + "/invoice/" + invoice_id,
+            self._base_url + "/invoice/" + invoice_id,
             headers=await self.headers,
         )
 
@@ -183,7 +161,7 @@ class QPayClient:
     # Payment
     async def payment_get(self, payment_id: str):
         response = await self._client.get(
-            BASE_URL + "/payment/" + payment_id,
+            self._base_url + "/payment/" + payment_id,
             headers=await self.headers,
         )
 
@@ -194,7 +172,7 @@ class QPayClient:
 
     async def payment_check(self, payment_check_request: PaymentCheckRequest):
         response = await self._client.post(
-            BASE_URL + "/payment/check",
+            self._base_url + "/payment/check",
             data=payment_check_request.model_dump(),
             headers=await self.headers,
         )
@@ -206,7 +184,7 @@ class QPayClient:
 
     async def payment_cancel(self, payment_id: str):
         response = await self._client.delete(
-            BASE_URL + "/payment/cancel/" + payment_id,
+            self._base_url + "/payment/cancel/" + payment_id,
             headers=await self.headers,
         )
 
@@ -216,7 +194,7 @@ class QPayClient:
 
     async def payment_refund(self, payment_id: str):
         response = await self._client.delete(
-            BASE_URL + "/payment/refund/" + payment_id,
+            self._base_url + "/payment/refund/" + payment_id,
             headers=await self.headers,
         )
 
@@ -226,7 +204,7 @@ class QPayClient:
 
     async def payment_list(self, payment_list_request: PaymentListRequest):
         response = await self._client.post(
-            BASE_URL + "/payment/list",
+            self._base_url + "/payment/list",
             data=payment_list_request.model_dump(),
             headers=await self.headers,
         )
@@ -239,7 +217,7 @@ class QPayClient:
     # ebarimt
     async def ebarimt_create(self, ebarimt_create_request: EbarimtCreateRequest):
         response = await self._client.post(
-            BASE_URL + "/ebarimt/create",
+            self._base_url + "/ebarimt/create",
             data=ebarimt_create_request.model_dump(),
             headers=await self.headers,
         )
@@ -251,7 +229,7 @@ class QPayClient:
 
     async def ebarimt_get(self, barimt_id: str):
         response = await self._client.get(
-            BASE_URL + "/ebarimt/" + barimt_id,
+            self._base_url + "/ebarimt/" + barimt_id,
             headers=await self.headers,
         )
 
