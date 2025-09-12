@@ -1,8 +1,10 @@
-from typing import Optional, List
-from pydantic import BaseModel, Field, ConfigDict
 from datetime import date, datetime
 from decimal import Decimal
-from .enums import PaymentStatus, BankCode, Currency, ObjectTypeNum
+from typing import List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from .enums import BankCode, Currency, ObjectTypeNum, PaymentStatus
 
 
 class TokenResponse(BaseModel):
