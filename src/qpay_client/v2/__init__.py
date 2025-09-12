@@ -1,3 +1,6 @@
 from .qpay_client import QPayClient
+from .qpay_client_sync import QPayClientSync
 
-__all__ = ["QPayClient"]
+# singleton pattern?
+
+__all__ = ["QPayClient", "QPayClientSync"]

@@ -6,13 +6,8 @@ from qpay_client.v2.schemas import InvoiceCreateSimpleRequest
 
 client = QPayClient()
 
-
-async def test():
-    token = await client._get_token()
-
-    print(token)
-
-    response = await client.invoice_create(
+response = asyncio.run(
+    client.invoice_create(
         InvoiceCreateSimpleRequest(
             invoice_code="TEST_INVOICE",
             sender_invoice_no="1234567",
@@ -20,11 +15,9 @@ async def test():
             invoice_description="test",
             sender_branch_code="SALBAR1",
             amount=Decimal(1500),
-            callback_url="https://bd5492c3ee85.ngrok.io/payments?payment_id=1234567",
+            callback_url="https://api.your-domain.mn/payments?payment_id=1234567",
         )
     )
+)
 
-    print(response)
-
-
-asyncio.run(test())
+print(response)

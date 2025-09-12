@@ -9,9 +9,11 @@ Made with ❤️
 
 ## Features
 
-- The client manages and refreshes access token
-- Async/Await
+- Client manages the access & refresh tokens 🤖
+- Both sync and async/await support
 - Pydantic data validation
+- Retries for payment check 🔁
+- QPay error support
 
 ## Installation
 
@@ -38,24 +40,27 @@ $ uv add qpay-client
 ### Basic Example
 
 ```python
-from decimal import Decimal
 import asyncio
+from decimal import Decimal
 
 from qpay_client.v2 import QPayClient
 from qpay_client.v2.schemas import InvoiceCreateSimpleRequest
 
-
 client = QPayClient()
 
-response = asyncio.run(client.invoice_create(InvoiceCreateSimpleRequest(
-  invoice_code = "TEST_INVOICE",
-  sender_invoice_no = "1234567",
-  invoice_receiver_code = "terminal",
-  invoice_description = "test",
-  sender_branch_code = "SALBAR1",
-  amount = 1500,
-  callback_url = "https://api.your-domain.mn/payments?payment_id=1234567",
-)))
+response = asyncio.run(
+    client.invoice_create(
+        InvoiceCreateSimpleRequest(
+            invoice_code="TEST_INVOICE",
+            sender_invoice_no="1234567",
+            invoice_receiver_code="terminal",
+            invoice_description="test",
+            sender_branch_code="SALBAR1",
+            amount=Decimal(1500),
+            callback_url="https://api.your-domain.mn/payments?payment_id=1234567",
+        )
+    )
+)
 
 print(response)
 ```

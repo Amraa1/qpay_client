@@ -68,7 +68,7 @@ class QPayClient:
         self._logger = logger
 
     @property
-    async def headers(self):
+    async def _headers(self):
         token = await self.get_token()
         return {
             "Content-Type": "APP_JSON",
@@ -77,14 +77,21 @@ class QPayClient:
 
     def _check_error(self, response: Response):
         if response.is_error:
-            print(response.json())
             error_data = response.json()
+            self._logger.error(error_data)
             raise QPayError(
                 status_code=response.status_code, error_key=error_data["message"]
             )
 
     # Auth
-    async def authenticate(self):
+    async def _authenticate(self):
+        """
+        Used for server authentication.
+
+        Note:
+            DO NOT CALL THIS FUNCTION!
+            The client manages the tokens.
+        """
         response = await self._client.post(
             self._base_url + "/auth/token",
             auth=self._auth_credentials,
@@ -102,9 +109,9 @@ class QPayClient:
         self._not_before_policy = data.not_before_policy
         self._session_state = data.session_state
 
-    async def refresh_access_token(self):
+    async def _refresh_access_token(self):
         if not self._refresh_token or time.time() >= self._refresh_token_expiry:
-            await self.authenticate()
+            await self._authenticate()
             return
 
         response = await self._client.post(
@@ -122,13 +129,13 @@ class QPayClient:
             self._access_token_expiry = data.expires_in - self._token_leeway
             self._refresh_token_expiry = data.refresh_expires_in - self._token_leeway
         else:
-            await self.authenticate()
+            await self._authenticate()
 
     async def get_token(self):
         if not self._access_token:
-            await self.authenticate()
+            await self._authenticate()
         elif time.time() >= self._access_token_expiry:
-            await self.refresh_access_token()
+            await self._refresh_access_token()
         return self._access_token
 
     # Invoice
@@ -137,7 +144,7 @@ class QPayClient:
     ):
         response = await self._client.post(
             self._base_url + "/invoice",
-            headers=await self.headers,
+            headers=await self._headers,
             data=create_invoice_request.model_dump(),
         )
 
@@ -152,7 +159,7 @@ class QPayClient:
     ):
         response = await self._client.delete(
             self._base_url + "/invoice/" + invoice_id,
-            headers=await self.headers,
+            headers=await self._headers,
         )
 
         self._check_error(response)
@@ -163,7 +170,7 @@ class QPayClient:
     async def payment_get(self, payment_id: str):
         response = await self._client.get(
             self._base_url + "/payment/" + payment_id,
-            headers=await self.headers,
+            headers=await self._headers,
         )
 
         self._check_error(response)
@@ -175,7 +182,7 @@ class QPayClient:
         response = await self._client.post(
             self._base_url + "/payment/check",
             data=payment_check_request.model_dump(),
-            headers=await self.headers,
+            headers=await self._headers,
         )
 
         self._check_error(response)
@@ -186,7 +193,7 @@ class QPayClient:
     async def payment_cancel(self, payment_id: str):
         response = await self._client.delete(
             self._base_url + "/payment/cancel/" + payment_id,
-            headers=await self.headers,
+            headers=await self._headers,
         )
 
         self._check_error(response)
@@ -196,7 +203,7 @@ class QPayClient:
     async def payment_refund(self, payment_id: str):
         response = await self._client.delete(
             self._base_url + "/payment/refund/" + payment_id,
-            headers=await self.headers,
+            headers=await self._headers,
         )
 
         self._check_error(response)
@@ -207,7 +214,7 @@ class QPayClient:
         response = await self._client.post(
             self._base_url + "/payment/list",
             data=payment_list_request.model_dump(),
-            headers=await self.headers,
+            headers=await self._headers,
         )
 
         self._check_error(response)
@@ -220,7 +227,7 @@ class QPayClient:
         response = await self._client.post(
             self._base_url + "/ebarimt/create",
             data=ebarimt_create_request.model_dump(),
-            headers=await self.headers,
+            headers=await self._headers,
         )
 
         self._check_error(response)
@@ -231,7 +238,7 @@ class QPayClient:
     async def ebarimt_get(self, barimt_id: str):
         response = await self._client.get(
             self._base_url + "/ebarimt/" + barimt_id,
-            headers=await self.headers,
+            headers=await self._headers,
         )
 
         self._check_error(response)
