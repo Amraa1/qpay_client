@@ -26,7 +26,7 @@ $ pip install qpay-client
 Using poetry:
 
 ```bash
-$ poetry install qpay-client
+$ poetry add qpay-client
 ```
 
 Using uv:
