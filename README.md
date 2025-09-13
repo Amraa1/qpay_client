@@ -2,8 +2,9 @@
 
 QPay API integration made simpler and safer with data validation and auto token refresh.
 
-Package document at: https://pypi.org/project/qpay-client/  
-QPay document at: https://developer.qpay.mn
+Visit links:  
+[Package document](https://pypi.org/project/qpay-client/)  
+[QPay document](https://developer.qpay.mn)
 
 Made with ❤️
 
@@ -20,19 +21,19 @@ Made with ❤️
 Using pip:
 
 ```bash
-$ pip install qpay-client
+pip install qpay-client
 ```
 
 Using poetry:
 
 ```bash
-$ poetry add qpay-client
+poetry add qpay-client
 ```
 
 Using uv:
 
 ```bash
-$ uv add qpay-client
+uv add qpay-client
 ```
 
 ## Usage
@@ -67,13 +68,13 @@ print(response)
 
 ### Methods
 
-#### Invoice methods:
+#### Invoice methods
 
 `invoice_create`
 
 `invoice_cancel`
 
-#### Payment methods:
+#### Payment methods
 
 `payment_get`
 
@@ -85,7 +86,7 @@ print(response)
 
 `payment_list`
 
-#### Ebarimt methods:
+#### Ebarimt methods
 
 `ebarimt_create`
 
