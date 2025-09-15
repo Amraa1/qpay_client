@@ -7,7 +7,11 @@ from qpay_client.v2 import QPayClient
 from qpay_client.v2.enums import ObjectTypeNum
 from qpay_client.v2.schemas import InvoiceCreateSimpleRequest, PaymentCheckRequest
 
-client = QPayClient()
+client = QPayClient(
+    username="TEST_MERCHANT",  # or use your username
+    password="123456",  # or use your password
+    is_sandbox=True,  # or false for production
+)
 
 app = FastAPI()
 

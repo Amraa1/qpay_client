@@ -11,10 +11,10 @@ Made with ❤️
 ## Features
 
 - Client manages the access & refresh tokens 🤖
-- Both sync and async/await support
-- Pydantic data validation
+- Both sync and async/await support 🙈🙉
+- Pydantic data validation ✅
 - Retries for payment check 🔁
-- QPay error support
+- QPay error support 🔍
 
 ## Installation
 
@@ -50,6 +50,8 @@ Lets implement basic payment flow described in QPay developer document.
 
 ### How to implement
 
+You don't have to worry about authentication and managing tokens. QPay client manages this behind the scene so you can focus on the important parts.
+
 You can use any web framework. I am using [Fastapi](https://fastapi.tiangolo.com/) for the example just to create a simple callback API.
 
 ```python
@@ -62,7 +64,11 @@ from qpay_client.v2 import QPayClient
 from qpay_client.v2.enums import ObjectTypeNum
 from qpay_client.v2.schemas import InvoiceCreateSimpleRequest, PaymentCheckRequest
 
-client = QPayClient()
+client = QPayClient(
+    username="TEST_MERCHANT",  # or use your username
+    password="123456",  # or use your password
+    is_sandbox=True,  # or false for production
+)
 
 app = FastAPI()
 
@@ -126,27 +132,27 @@ asyncio.run(create_invoice())
 
 #### Invoice methods
 
-`invoice_create`
+`invoice_create` Used to create QPay invoice.
 
-`invoice_cancel`
+`invoice_cancel` Used to cancel a created invoice
 
 #### Payment methods
 
-`payment_get`
+`payment_get` Used to get payment details
 
-`payment_check`
+`payment_check` Used to check payment after the callback invocation
 
-`payment_cancel`
+`payment_cancel` Used to cancel payment (Use with caution ⚠️)
 
-`payment_refund`
+`payment_refund` Used to refund the payment back to the user
 
-`payment_list`
+`payment_list` Used to list payments (e.g: for subscription 🔁)
 
 #### Ebarimt methods
 
-`ebarimt_create`
+`ebarimt_create` Used to create Ebarimt (must be registered in Ebarimt platform first)
 
-`ebarimt_get`
+`ebarimt_get` Used to get Ebarimt (must be registered in Ebarimt platform first)
 
 ## License
 
