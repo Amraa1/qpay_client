@@ -20,9 +20,7 @@ from .schemas import (
 
 logger = logging.getLogger("qpay")
 
-type QPayBaseUrl = Literal[
-    "https://merchant-sandbox.qpay.mn/v2", "https://merchant.qpay.mn/v2"
-]
+type QPayBaseUrl = Literal["https://merchant-sandbox.qpay.mn/v2", "https://merchant.qpay.mn/v2"]
 
 
 class QPayClient:
@@ -120,9 +118,7 @@ class QPayClient:
         if response.is_error:
             error_data = response.json()
             self._logger.error(error_data)
-            raise QPayError(
-                status_code=response.status_code, error_key=error_data["message"]
-            )
+            raise QPayError(status_code=response.status_code, error_key=error_data["message"])
 
     # Auth
     async def _authenticate(self):
