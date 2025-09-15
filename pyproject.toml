@@ -80,6 +80,6 @@ no_implicit_optional = true
 plugins = []
 
 [tool.pytest.ini_options]
-addopts = "-q --cov=qpay_client --cov-report=term-missing --cov-report=xml"
+addopts = "-q"
 testpaths = ["tests"]
 asyncio_mode = "auto"
