@@ -2,6 +2,10 @@ from enum import StrEnum
 
 
 class Currency(StrEnum):
+    """
+    Currency code used in QPay.
+    """
+
     mnt = "MNT"
     usd = "USD"
     cny = "CNY"
@@ -11,6 +15,10 @@ class Currency(StrEnum):
 
 
 class PaymentStatus(StrEnum):
+    """
+    Payment status received from payment get request.
+    """
+
     new = "NEW"
     failed = "FAILED"
     paid = "PAID"
@@ -19,6 +27,10 @@ class PaymentStatus(StrEnum):
 
 
 class BankCode(StrEnum):
+    """
+    Bank codes provided by QPay.
+    """
+
     bank_of_mongolia = "010000"
     capital_bank = "020000"
     trade_and_development_bank_of_mongolia = "040000"
@@ -42,6 +54,10 @@ class BankCode(StrEnum):
 
 
 class ObjectTypeNum(StrEnum):
+    """
+    Object types provided by QPay.
+    """
+
     invoice = "INVOICE"
     qr = "QR"
     item = "ITEM"
