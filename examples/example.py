@@ -5,8 +5,7 @@ from fastapi import FastAPI, status
 
 from qpay_client.v2 import QPayClient
 from qpay_client.v2.enums import ObjectTypeNum
-from qpay_client.v2.schemas import (InvoiceCreateSimpleRequest,
-                                    PaymentCheckRequest)
+from qpay_client.v2.schemas import InvoiceCreateSimpleRequest, PaymentCheckRequest
 
 client = QPayClient(
     username="TEST_MERCHANT",  # or use your username
