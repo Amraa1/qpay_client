@@ -5,22 +5,16 @@ from typing import Literal, Optional
 from httpx import AsyncClient, BasicAuth, Response, Timeout
 
 from .error import QPayError
-from .schemas import (
-    CreateInvoiceResponse,
-    Ebarimt,
-    EbarimtCreateRequest,
-    InvoiceCreateRequest,
-    InvoiceCreateSimpleRequest,
-    Payment,
-    PaymentCheckRequest,
-    PaymentCheckResponse,
-    PaymentListRequest,
-    TokenResponse,
-)
+from .schemas import (CreateInvoiceResponse, Ebarimt, EbarimtCreateRequest,
+                      InvoiceCreateRequest, InvoiceCreateSimpleRequest,
+                      Payment, PaymentCheckRequest, PaymentCheckResponse,
+                      PaymentListRequest, TokenResponse)
 
 logger = logging.getLogger("qpay")
 
-type QPayBaseUrl = Literal["https://merchant-sandbox.qpay.mn/v2", "https://merchant.qpay.mn/v2"]
+type QPayBaseUrl = Literal[
+    "https://merchant-sandbox.qpay.mn/v2", "https://merchant.qpay.mn/v2"
+]
 
 
 class QPayClient:
@@ -39,7 +33,8 @@ class QPayClient:
             Set to False for production.
         timeout (httpx.Timeout): HTTP timeout configuration. Defaults to
             5s connect, 10s read/write, 5s pool.
-        base_url (Literal["https://merchant-sandbox.qpay.mn/v2", "https://merchant.qpay.mn/v2"], optional):
+        base_url (Literal["https://merchant-sandbox.qpay.mn/v2", "https://merchant.qpay.mn/v2"], \
+            optional): 
             Override the default base URL if provided.
         token_leeway (int): Seconds before expiry to refresh tokens.
             Defaults to 60.
@@ -118,7 +113,9 @@ class QPayClient:
         if response.is_error:
             error_data = response.json()
             self._logger.error(error_data)
-            raise QPayError(status_code=response.status_code, error_key=error_data["message"])
+            raise QPayError(
+                status_code=response.status_code, error_key=error_data["message"]
+            )
 
     # Auth
     async def _authenticate(self):

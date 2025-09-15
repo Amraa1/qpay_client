@@ -47,7 +47,9 @@ class SenderTerminalData(BaseModel):
 class InvoiceReceiverData(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    registration_number: Optional[str] = Field(default=None, alias="register", max_length=20)
+    registration_number: Optional[str] = Field(
+        default=None, alias="register", max_length=20
+    )
     name: Optional[str] = Field(default=None, max_length=100)
     email: Optional[str] = Field(default=None, max_length=255)
     phone: Optional[str] = Field(default=None, max_length=20)
@@ -57,7 +59,9 @@ class InvoiceReceiverData(BaseModel):
 class SenderBranchData(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    registration_number: Optional[str] = Field(default=None, alias="register", max_length=20)
+    registration_number: Optional[str] = Field(
+        default=None, alias="register", max_length=20
+    )
     name: Optional[str] = Field(default=None, max_length=100)
     email: Optional[str] = Field(default=None, max_length=255)
     phone: Optional[str] = Field(default=None, max_length=20)

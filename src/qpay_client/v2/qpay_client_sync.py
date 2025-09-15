@@ -5,22 +5,16 @@ from typing import Literal
 from httpx import BasicAuth, Client, Response, Timeout
 
 from .error import QPayError
-from .schemas import (
-    CreateInvoiceResponse,
-    Ebarimt,
-    EbarimtCreateRequest,
-    InvoiceCreateRequest,
-    InvoiceCreateSimpleRequest,
-    Payment,
-    PaymentCheckRequest,
-    PaymentCheckResponse,
-    PaymentListRequest,
-    TokenResponse,
-)
+from .schemas import (CreateInvoiceResponse, Ebarimt, EbarimtCreateRequest,
+                      InvoiceCreateRequest, InvoiceCreateSimpleRequest,
+                      Payment, PaymentCheckRequest, PaymentCheckResponse,
+                      PaymentListRequest, TokenResponse)
 
 logger = logging.getLogger("qpay")
 
-type QPayBaseUrl = Literal["https://merchant-sandbox.qpay.mn/v2", "https://merchant.qpay.mn/v2"]
+type QPayBaseUrl = Literal[
+    "https://merchant-sandbox.qpay.mn/v2", "https://merchant.qpay.mn/v2"
+]
 
 
 class QPayClientSync:
@@ -123,7 +117,9 @@ class QPayClientSync:
         if response.is_error:
             error_data = response.json()
             self._logger.error(error_data)
-            raise QPayError(status_code=response.status_code, error_key=error_data["message"])
+            raise QPayError(
+                status_code=response.status_code, error_key=error_data["message"]
+            )
 
     # Auth
     def _authenticate(self):
