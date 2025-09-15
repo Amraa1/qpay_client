@@ -11,7 +11,7 @@ dependencies = [
     "httpx>=0.28.1",
     "pydantic>=2.11.7",
 ]
-license = { file = "LICENCE.txt" }
+license = { file = "LICENSE.txt" }
 keywords = [
   "qpay", "payment", "qpay v2", "mongolian payment", "mongolia",
   "httpx", "pydantic", "asyncio"
