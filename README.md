@@ -128,6 +128,10 @@ asyncio.run(create_invoice())
 
 ```
 
+### Run it
+
+`fastapi dev main.py`
+
 ### Methods
 
 #### Invoice methods
