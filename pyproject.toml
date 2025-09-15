@@ -31,8 +31,8 @@ classifiers = [
 [project.urls]
 Homepage = "https://pypi.org/project/qpay-client/"
 Documentation = "https://pypi.org/project/qpay-client/"
-Source = "https://example.com/amraa/qpay_client"
-Issues = "https://example.com/amraa/qpay_client/issues"
+Source = "https://github.com/Amraa1/qpay_client"
+Issues = "https://github.com/Amraa1/qpay_client/issues"
 
 
 [build-system]
