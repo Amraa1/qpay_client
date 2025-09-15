@@ -48,7 +48,7 @@ Lets implement basic payment flow described in QPay developer document.
 
 > You are _free to implement the callback API's URI and query/params_ in anyway you want. But the callback you implement must return `Response(status_code = 200, body="SUCCESS")`.
 
-### How to implement
+### How to implement (Async example)
 
 You don't have to worry about authentication and managing tokens. QPay client manages this behind the scene so you can focus on the important parts.
 
@@ -128,6 +128,18 @@ asyncio.run(create_invoice())
 
 ```
 
+### Sync client
+
+There is also sync flavour of the client which you can simply use as follows. All the implementation in Async client is also in the Sync client.
+
+```python
+from qpay_client.v2 import QPayClientSync
+
+client = QPayClientSync()
+
+...
+```
+
 ### Run it
 
 `fastapi dev main.py`
@@ -157,6 +169,16 @@ asyncio.run(create_invoice())
 `ebarimt_create` Used to create Ebarimt (must be registered in Ebarimt platform first)
 
 `ebarimt_get` Used to get Ebarimt (must be registered in Ebarimt platform first)
+
+### Schemas
+
+Request/response payloads are strongly typed via Pydantic.
+See `qpay_client.v2.schemas` for models such as:
+
+- InvoiceCreateSimpleRequest
+- InvoiceCreateRequest
+- PaymentCheckRequest
+- EbarimtCreateRequest
 
 ## License
 
