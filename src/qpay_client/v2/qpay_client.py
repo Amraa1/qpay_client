@@ -27,7 +27,48 @@ type QPayBaseUrl = Literal[
 
 class QPayClient:
     """
-    Async QPay v2 client
+    Asynchronous client for QPay v2 API.
+
+    This client handles authentication, token refresh, and provides async
+    methods for interacting with QPay v2 endpoints (invoices, payments,
+    and ebarimt). It is designed to follow the official QPay v2
+    documentation.
+
+    Args:
+        username (str): Merchant username. Defaults to ``"TEST_MERCHANT"``.
+        password (str): Merchant password. Defaults to ``"123456"``.
+        is_sandbox (bool): Use sandbox environment if True (default).
+            Set to False for production.
+        timeout (httpx.Timeout): HTTP timeout configuration. Defaults to
+            5s connect, 10s read/write, 5s pool.
+        base_url (Literal["https://merchant-sandbox.qpay.mn/v2", "https://merchant.qpay.mn/v2"], optional):
+            Override the default base URL if provided.
+        token_leeway (int): Seconds before expiry to refresh tokens.
+            Defaults to 60.
+        logger (logging.Logger): Logger instance. Defaults to module logger.
+
+    Authentication:
+        The client manages token acquisition and refresh automatically.
+        You should not call ``_authenticate`` directly.
+
+    Example:
+        >>> from qpay_client.v2 import QPayClient
+        >>> client = QPayClient(username="YOUR_ID", password="YOUR_SECRET", is_sandbox=True)
+        >>> invoice = await client.invoice_create(request)
+
+    Available APIs:
+        - **Invoice**
+            - ``invoice_create``
+            - ``invoice_cancel``
+        - **Payment**
+            - ``payment_get``
+            - ``payment_check``
+            - ``payment_cancel``
+            - ``payment_refund``
+            - ``payment_list``
+        - **Ebarimt**
+            - ``ebarimt_create``
+            - ``ebarimt_get``
     """
 
     def __init__(
