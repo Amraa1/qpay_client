@@ -42,7 +42,7 @@ uv add qpay-client
 
 Lets implement basic payment flow described in QPay developer document.
 
-![Process diagram image](https://raw.githubusercontent.com/Amraa1/qpay_client/4f9bc07c70bd3284a4af80018b84c9220d5d2991/images/qpay_payment_process.svg "QPay process diagram")
+![Process diagram image](https://raw.githubusercontent.com/Amraa1/qpay_client/1ae82fced964d3959fee8e610d26903bcc075fa5/images/qpay_payment_process.svg "QPay process diagram")
 
 **Important to note:**
 
