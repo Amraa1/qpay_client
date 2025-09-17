@@ -16,6 +16,32 @@ Made with ❤️
 - Retries for payment check 🔁
 - QPay error support 🔍
 
+## API coverage
+
+### Auth 🔐
+
+- ✅ **token** - Used to get token
+- ✅ **refresh** - Used to refresh token
+
+### Invoice 📜
+
+- ❌ **get** (Please make an issue if you need this!)
+- ✅ **create (simple and complex)**
+- ✅ **cancel**
+
+### Payment 💵
+
+- ✅ **get**
+- ✅ **list**
+- ✅ **check**
+- ✅ **cancel**
+- ✅ **refund**
+
+### Ebarimt 🧾
+
+- ✅ **get**
+- ✅ **create**
+
 ## Installation
 
 Using pip:
