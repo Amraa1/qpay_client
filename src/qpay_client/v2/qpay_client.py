@@ -5,16 +5,20 @@ from typing import Literal, Optional
 from httpx import AsyncClient, BasicAuth, Response, Timeout
 
 from .error import QPayError
-from .schemas import (CreateInvoiceResponse, Ebarimt, EbarimtCreateRequest,
-                      InvoiceCreateRequest, InvoiceCreateSimpleRequest,
-                      Payment, PaymentCheckRequest, PaymentCheckResponse,
-                      PaymentListRequest, TokenResponse)
+from .schemas import (
+    Ebarimt,
+    EbarimtCreateRequest,
+    InvoiceCreateRequest,
+    InvoiceCreateResponse,
+    InvoiceCreateSimpleRequest,
+    Payment,
+    PaymentCheckRequest,
+    PaymentCheckResponse,
+    PaymentListRequest,
+    TokenResponse,
+)
 
 logger = logging.getLogger("qpay")
-
-type QPayBaseUrl = Literal[
-    "https://merchant-sandbox.qpay.mn/v2", "https://merchant.qpay.mn/v2"
-]
 
 
 class QPayClient:
@@ -33,7 +37,7 @@ class QPayClient:
             Set to False for production.
         timeout (httpx.Timeout): HTTP timeout configuration. Defaults to
             5s connect, 10s read/write, 5s pool.
-        base_url (Literal["https://merchant-sandbox.qpay.mn/v2", "https://merchant.qpay.mn/v2"], \
+        base_url (Literal["https://merchant-sandbox.qpay.mn/v2", "https://merchant.qpay.mn/v2"],
             optional): 
             Override the default base URL if provided.
         token_leeway (int): Seconds before expiry to refresh tokens.
@@ -46,7 +50,8 @@ class QPayClient:
 
     Example:
         >>> from qpay_client.v2 import QPayClient
-        >>> client = QPayClient(username="YOUR_ID", password="YOUR_SECRET", is_sandbox=True)
+        >>> client = QPayClient(username="YOUR_ID", password="YOUR_SECRET", \
+            is_sandbox=True)
         >>> invoice = await client.invoice_create(request)
 
     Available APIs:
@@ -71,7 +76,12 @@ class QPayClient:
         password: str = "123456",
         is_sandbox: bool = True,
         timeout=Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0),
-        base_url: Optional[QPayBaseUrl] = None,
+        base_url: (
+            Optional[
+                Literal["https://merchant-sandbox.qpay.mn/v2"]
+                | Literal["https://merchant.qpay.mn/v2"]
+            ]
+        ) = None,
         token_leeway=60,
         logger=logger,
     ):
@@ -184,7 +194,7 @@ class QPayClient:
 
         self._check_error(response)
 
-        data = CreateInvoiceResponse.model_validate_json(response.json())
+        data = InvoiceCreateResponse.model_validate_json(response.json())
         return data
 
     async def invoice_cancel(

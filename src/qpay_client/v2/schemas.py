@@ -4,7 +4,7 @@ Pydantic schemas for QPay v2.
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -96,9 +96,9 @@ class Line(BaseModel):
     line_quantity: Decimal = Field(max_digits=20)
     line_unit_price: Decimal = Field(max_digits=20)
     note: Optional[str] = Field(default=None, max_length=100)
-    discounts: Optional[List[Discount]] = None
-    surcharges: Optional[List[Surcharge]] = None
-    taxes: Optional[List[Tax]] = None
+    discounts: Optional[list[Discount]] = None
+    surcharges: Optional[list[Surcharge]] = None
+    taxes: Optional[list[Tax]] = None
 
 
 class SenderStaffData(BaseModel):
@@ -118,7 +118,7 @@ class InvoiceCreateSimpleRequest(BaseModel):
 
 
 class InvoiceCreateRequest(BaseModel):
-    invoice_code: str = Field(max_length=45)
+    invoice_code: str = Field(examples=["TEST_INVOICE"], max_length=45)
     sender_invoice_no: str = Field(max_length=45)
     sender_branch_code: Optional[str] = Field(default=None, max_length=45)
     sender_branch_data: Optional[SenderBranchData] = None
@@ -142,16 +142,16 @@ class InvoiceCreateRequest(BaseModel):
     amount: Optional[Decimal] = Field(default=None)
     callback_url: str = Field(max_length=255)
     note: Optional[str] = Field(default=None, max_length=1000)
-    lines: Optional[List[Line]] = None
-    transactions: Optional[List] = None
+    lines: Optional[list[Line]] = None
+    transactions: Optional[list] = None
 
 
-class CreateInvoiceResponse(BaseModel):
+class InvoiceCreateResponse(BaseModel):
     invoice_id: str
     qr_text: str
     qr_image: str
     qPay_shortUrl: str
-    urls: List[QPayDeeplink]
+    urls: list[QPayDeeplink]
 
 
 class CardTransaction(BaseModel):
@@ -186,8 +186,8 @@ class Payment(BaseModel):
     payment_type: str
     next_payment_date: Optional[date] = None
     next_payment_datetime: Optional[datetime] = None
-    card_transactions: List[CardTransaction]
-    p2p_transactions: List[P2PTransaction]
+    card_transactions: list[CardTransaction]
+    p2p_transactions: list[P2PTransaction]
 
 
 class Offset(BaseModel):
@@ -198,7 +198,7 @@ class Offset(BaseModel):
 class PaymentCheckResponse(BaseModel):
     count: Optional[Decimal] = None
     paid_amount: Optional[Decimal] = None
-    rows: Optional[List[Payment]] = None
+    rows: Optional[list[Payment]] = None
 
 
 class PaymentCheckRequest(BaseModel):

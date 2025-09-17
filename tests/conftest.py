@@ -37,11 +37,13 @@ def frozen_time(monkeypatch):
 
 def as_json_string_body(payload: dict) -> bytes:
     """
-    Your clients call `model_validate_json(response.json())`, which expects a JSON string.
-    We therefore make `response.json()` return a *string* (containing JSON) by
-    sending a JSON-encoded string value as the HTTP body (e.g. "\"{...}\"").
+    Your clients call `model_validate_json(response.json())`, which expects a
+    JSON string. We therefore make `response.json()` return a *string*
+    (containing JSON) by sending a JSON-encoded string value as the
+    HTTP body (e.g. "\"{...}\"").
     """
-    # body content like: "\"{ ... }\""  => .json() -> Python str -> ok for model_validate_json
+    # body content like:
+    # "\"{ ... }\""  => .json() -> Python str -> ok for model_validate_json
     return json.dumps(json.dumps(payload)).encode("utf-8")
 
 

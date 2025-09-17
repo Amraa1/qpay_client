@@ -1,20 +1,24 @@
 import logging
 import time
-from typing import Literal
+from typing import Literal, Optional
 
 from httpx import BasicAuth, Client, Response, Timeout
 
 from .error import QPayError
-from .schemas import (CreateInvoiceResponse, Ebarimt, EbarimtCreateRequest,
-                      InvoiceCreateRequest, InvoiceCreateSimpleRequest,
-                      Payment, PaymentCheckRequest, PaymentCheckResponse,
-                      PaymentListRequest, TokenResponse)
+from .schemas import (
+    Ebarimt,
+    EbarimtCreateRequest,
+    InvoiceCreateRequest,
+    InvoiceCreateResponse,
+    InvoiceCreateSimpleRequest,
+    Payment,
+    PaymentCheckRequest,
+    PaymentCheckResponse,
+    PaymentListRequest,
+    TokenResponse,
+)
 
 logger = logging.getLogger("qpay")
-
-type QPayBaseUrl = Literal[
-    "https://merchant-sandbox.qpay.mn/v2", "https://merchant.qpay.mn/v2"
-]
 
 
 class QPayClientSync:
@@ -46,7 +50,8 @@ class QPayClientSync:
 
     Example:
         >>> from qpay_client.v2 import QPayClientSync
-        >>> client = QPayClientSync(username="YOUR_ID", password="YOUR_SECRET", is_sandbox=False)
+        >>> client = QPayClientSync(username="YOUR_ID", password="YOUR_SECRET", \
+            is_sandbox=False)
         >>> invoice = client.invoice_create(request)
 
     Available APIs:
@@ -69,12 +74,14 @@ class QPayClientSync:
         *,
         username: str = "TEST_MERCHANT",
         password: str = "123456",
+        invoice_code: str = "TEST_INVOICE",
         is_sandbox: bool = True,
         timeout=Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0),
         base_url: (
-            None
-            | Literal["https://merchant-sandbox.qpay.mn/v2"]
-            | Literal["https://merchant.qpay.mn/v2"]
+            Optional[
+                Literal["https://merchant-sandbox.qpay.mn/v2"]
+                | Literal["https://merchant.qpay.mn/v2"]
+            ]
         ) = None,
         token_leeway=60,
         logger=logger,
@@ -83,6 +90,7 @@ class QPayClientSync:
             username=username,
             password=password,
         )
+        self._invoice_code = invoice_code
         self._client = Client(timeout=timeout)
 
         if base_url:
@@ -180,6 +188,7 @@ class QPayClientSync:
     def invoice_create(
         self, create_invoice_request: InvoiceCreateRequest | InvoiceCreateSimpleRequest
     ):
+        create_invoice_request.invoice_code = self._invoice_code
         response = self._client.post(
             self._base_url + "/invoice",
             headers=self._headers,
@@ -188,7 +197,7 @@ class QPayClientSync:
 
         self._check_error(response)
 
-        data = CreateInvoiceResponse.model_validate_json(response.json())
+        data = InvoiceCreateResponse.model_validate_json(response.json())
         return data
 
     def invoice_cancel(

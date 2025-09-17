@@ -1,7 +1,9 @@
-import pytest
-
-from qpay_client.v2.enums import (BankCode, Currency, ObjectTypeNum,  # noqa
-                                  PaymentStatus)
+from qpay_client.v2.enums import (
+    BankCode,
+    Currency,
+    ObjectTypeNum,  # noqa
+    PaymentStatus,
+)
 from qpay_client.v2.error import ClientConfigError, QPayError  # noqa
 
 

@@ -1,11 +1,17 @@
-from datetime import date, datetime
 from decimal import Decimal
 
 from qpay_client.v2.enums import ObjectTypeNum
-from qpay_client.v2.schemas import (CreateInvoiceResponse, Currency,
-                                    InvoiceCreateSimpleRequest, Offset,
-                                    Payment, PaymentCheckRequest,
-                                    PaymentStatus, QPayDeeplink, TokenResponse)
+from qpay_client.v2.schemas import (
+    Currency,
+    InvoiceCreateResponse,
+    InvoiceCreateSimpleRequest,
+    Offset,
+    Payment,
+    PaymentCheckRequest,
+    PaymentStatus,
+    QPayDeeplink,
+    TokenResponse,
+)
 
 
 def test_token_response_alias():
@@ -35,7 +41,7 @@ def test_invoice_create_simple_request_validation():
 
 
 def test_create_invoice_response_parsing():
-    resp = CreateInvoiceResponse(
+    resp = InvoiceCreateResponse(
         invoice_id="inv-1",
         qr_text="QR",
         qr_image="base64",
@@ -63,4 +69,10 @@ def test_payment_and_check_request_models():
         card_transactions=[],
         p2p_transactions=[],
     )
+    assert p.payment_status == PaymentStatus.paid
+    assert p.payment_currency == Currency.mnt
+    assert p.payment_wallet == "W"
+    assert p.payment_type == "CARD"
+    assert p.card_transactions == []
+    assert p.p2p_transactions == []
     assert p.payment_status == PaymentStatus.paid
