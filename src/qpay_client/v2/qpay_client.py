@@ -199,7 +199,7 @@ class QPayClient:
         response = await self._client.post(
             self._base_url + "/invoice",
             headers=await self._headers,
-            json=create_invoice_request.model_dump(),
+            json=create_invoice_request.model_dump_json(),
         )
 
         if response.is_error:
@@ -239,7 +239,7 @@ class QPayClient:
         response = await self._client.post(
             self._base_url + "/payment/check",
             headers=await self._headers,
-            json=payment_check_request.model_dump(),
+            json=payment_check_request.model_dump_json(),
         )
 
         if response.is_error:
@@ -274,7 +274,7 @@ class QPayClient:
         response = await self._client.post(
             self._base_url + "/payment/list",
             headers=await self._headers,
-            json=payment_list_request.model_dump(),
+            json=payment_list_request.model_dump_json(),
         )
 
         if response.is_error:
@@ -288,7 +288,7 @@ class QPayClient:
         response = await self._client.post(
             self._base_url + "/ebarimt/create",
             headers=await self._headers,
-            json=ebarimt_create_request.model_dump(),
+            json=ebarimt_create_request.model_dump_json(),
         )
 
         if response.is_error:

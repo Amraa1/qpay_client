@@ -101,7 +101,7 @@ def test_payment_paths_sync(respx_auto_mock, token_payload, sandbox_base):
 
     # payment.get -> dict JSON
     payment_payload = {
-        "payment_id": 1,
+        "payment_id": "1",
         "payment_status": "PAID",
         "payment_amount": 100,
         "trx_fee": 2,
