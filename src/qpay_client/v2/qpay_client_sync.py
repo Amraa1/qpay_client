@@ -192,7 +192,7 @@ class QPayClientSync:
         response = self._client.post(
             self._base_url + "/invoice",
             headers=self._headers,
-            data=create_invoice_request.model_dump(),
+            json=create_invoice_request.model_dump(),
         )
 
         self._check_error(response)
@@ -228,7 +228,7 @@ class QPayClientSync:
     def payment_check(self, payment_check_request: PaymentCheckRequest):
         response = self._client.post(
             self._base_url + "/payment/check",
-            data=payment_check_request.model_dump(),
+            json=payment_check_request.model_dump(),
             headers=self._headers,
         )
 
@@ -260,7 +260,7 @@ class QPayClientSync:
     def payment_list(self, payment_list_request: PaymentListRequest):
         response = self._client.post(
             self._base_url + "/payment/list",
-            data=payment_list_request.model_dump(),
+            json=payment_list_request.model_dump(),
             headers=self._headers,
         )
 
@@ -273,7 +273,7 @@ class QPayClientSync:
     def ebarimt_create(self, ebarimt_create_request: EbarimtCreateRequest):
         response = self._client.post(
             self._base_url + "/ebarimt/create",
-            data=ebarimt_create_request.model_dump(),
+            json=ebarimt_create_request.model_dump(),
             headers=self._headers,
         )
 

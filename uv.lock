@@ -374,7 +374,7 @@ wheels = [
 
 [[package]]
 name = "qpay-client"
-version = "0.2.5"
+version = "0.2.6"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },

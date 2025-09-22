@@ -126,7 +126,7 @@ class QPayClient:
     @property
     async def _headers(self):
         return {
-            "Content-Type": "APP_JSON",
+            "Content-Type": "application/json",
             "Authorization": f"Bearer {await self.get_token()}",
         }
 
@@ -199,7 +199,7 @@ class QPayClient:
         response = await self._client.post(
             self._base_url + "/invoice",
             headers=await self._headers,
-            data=create_invoice_request.model_dump(),
+            json=create_invoice_request.model_dump(),
         )
 
         if response.is_error:
@@ -238,8 +238,8 @@ class QPayClient:
     async def payment_check(self, payment_check_request: PaymentCheckRequest):
         response = await self._client.post(
             self._base_url + "/payment/check",
-            data=payment_check_request.model_dump(),
             headers=await self._headers,
+            json=payment_check_request.model_dump(),
         )
 
         if response.is_error:
@@ -273,8 +273,8 @@ class QPayClient:
     async def payment_list(self, payment_list_request: PaymentListRequest):
         response = await self._client.post(
             self._base_url + "/payment/list",
-            data=payment_list_request.model_dump(),
             headers=await self._headers,
+            json=payment_list_request.model_dump(),
         )
 
         if response.is_error:
@@ -287,8 +287,8 @@ class QPayClient:
     async def ebarimt_create(self, ebarimt_create_request: EbarimtCreateRequest):
         response = await self._client.post(
             self._base_url + "/ebarimt/create",
-            data=ebarimt_create_request.model_dump(),
             headers=await self._headers,
+            json=ebarimt_create_request.model_dump(),
         )
 
         if response.is_error:
