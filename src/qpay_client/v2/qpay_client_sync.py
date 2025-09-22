@@ -197,7 +197,7 @@ class QPayClientSync:
 
         self._check_error(response)
 
-        data = InvoiceCreateResponse.model_validate_json(response.json())
+        data = InvoiceCreateResponse.model_validate(response.json())
         return data
 
     def invoice_cancel(
@@ -234,7 +234,7 @@ class QPayClientSync:
 
         self._check_error(response)
 
-        validated_response = PaymentCheckResponse.model_validate_json(response.json())
+        validated_response = PaymentCheckResponse.model_validate(response.json())
         return validated_response
 
     def payment_cancel(self, payment_id: str):
@@ -266,7 +266,7 @@ class QPayClientSync:
 
         self._check_error(response)
 
-        validated_response = PaymentCheckResponse.model_validate_json(response.json())
+        validated_response = PaymentCheckResponse.model_validate(response.json())
         return validated_response
 
     # ebarimt
@@ -279,7 +279,7 @@ class QPayClientSync:
 
         self._check_error(response)
 
-        validated_response = Ebarimt.model_validate_json(response.json())
+        validated_response = Ebarimt.model_validate(response.json())
         return validated_response
 
     def ebarimt_get(self, barimt_id: str):
@@ -290,5 +290,5 @@ class QPayClientSync:
 
         self._check_error(response)
 
-        validated_response = Ebarimt.model_validate_json(response.json())
+        validated_response = Ebarimt.model_validate(response.json())
         return validated_response

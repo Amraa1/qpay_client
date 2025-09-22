@@ -177,7 +177,7 @@ class P2PTransaction(BaseModel):
 
 
 class Payment(BaseModel):
-    payment_id: Decimal
+    payment_id: str
     payment_status: PaymentStatus
     payment_amount: Decimal
     trx_fee: Decimal
@@ -196,9 +196,9 @@ class Offset(BaseModel):
 
 
 class PaymentCheckResponse(BaseModel):
-    count: Optional[Decimal] = None
+    count: int
     paid_amount: Optional[Decimal] = None
-    rows: Optional[list[Payment]] = None
+    rows: list[Payment]
 
 
 class PaymentCheckRequest(BaseModel):

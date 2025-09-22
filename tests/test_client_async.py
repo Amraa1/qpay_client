@@ -89,7 +89,7 @@ async def test_invoice_create_and_cancel(respx_auto_mock, token_payload, sandbox
 
     # Create invoice -> JSON string body path
     invoice_payload = {
-        "invoice_id": "inv-123",
+        "invoice_id": "123",
         "qr_text": "QR",
         "qr_image": "base64",
         "qPay_shortUrl": "https://qpay.mn/s/abc",
@@ -100,7 +100,7 @@ async def test_invoice_create_and_cancel(respx_auto_mock, token_payload, sandbox
     )
 
     # Cancel invoice -> plain dict JSON is fine (method returns response.json())
-    respx_auto_mock.delete(f"{sandbox_base}/invoice/inv-123").mock(
+    respx_auto_mock.delete(f"{sandbox_base}/invoice/123").mock(
         return_value=httpx.Response(200, json={})
     )
 
@@ -115,9 +115,9 @@ async def test_invoice_create_and_cancel(respx_auto_mock, token_payload, sandbox
     )
 
     created = await client.invoice_create(req)
-    assert created.invoice_id == "inv-123"
+    assert created.invoice_id == "123"
 
-    cancelled = await client.invoice_cancel("inv-123")
+    cancelled = await client.invoice_cancel("123")
     assert cancelled == {}
 
 
@@ -158,17 +158,17 @@ async def test_payment_check_get_list_cancel_refund(
     )
 
     # payment.cancel / payment.refund -> plain dict JSON
-    respx_auto_mock.delete(f"{sandbox_base}/payment/cancel/pm-1").mock(
+    respx_auto_mock.delete(f"{sandbox_base}/payment/cancel/1").mock(
         return_value=httpx.Response(200, json={})
     )
-    respx_auto_mock.delete(f"{sandbox_base}/payment/refund/pm-1").mock(
+    respx_auto_mock.delete(f"{sandbox_base}/payment/refund/1").mock(
         return_value=httpx.Response(200, json={})
     )
 
     client = QPayClient(is_sandbox=True)
 
     # GET payment
-    got = await client.payment_get("pm-1")
+    got = await client.payment_get("1")
     assert str(got.payment_id) == "1"
 
     # CHECK payment

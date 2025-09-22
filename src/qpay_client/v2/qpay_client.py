@@ -84,13 +84,18 @@ class QPayClient:
         ) = None,
         token_leeway=60,
         logger=logger,
+        log_level: int = logging.INFO,
     ):
+        # Basic Auth setup
         self._auth_credentials = BasicAuth(
             username=username,
             password=password,
         )
-        self._client = AsyncClient(timeout=timeout)
 
+        self._logger = logger
+        self._logger.setLevel(log_level)
+
+        # base_url setup, base_url is can also be automatically set from is_sandbox
         if base_url:
             # user supplied base_url
             self._base_url = base_url
@@ -111,6 +116,13 @@ class QPayClient:
         self._token_leeway = token_leeway or 60
         self._logger = logger
 
+        self._client = AsyncClient(timeout=timeout)
+
+        self._logger.debug(
+            "QPayClient initialized",
+            extra={"base_url": self._base_url, "sandbox": is_sandbox},
+        )
+
     @property
     async def _headers(self):
         token = await self.get_token()
@@ -119,13 +131,12 @@ class QPayClient:
             "Authorization": f"Bearer {token}",
         }
 
-    def _check_error(self, response: Response):
-        if response.is_error:
-            error_data = response.json()
-            self._logger.error(error_data)
-            raise QPayError(
-                status_code=response.status_code, error_key=error_data["message"]
-            )
+    def _handle_error(self, response: Response):
+        error_data: dict[str, str] = response.json()
+        logger.error(f"HTTP {response.status_code} error: {error_data}")
+        raise QPayError(
+            status_code=response.status_code, error_key=error_data.get("message", "")
+        )
 
     # Auth
     async def _authenticate(self):
@@ -140,8 +151,8 @@ class QPayClient:
             self._base_url + "/auth/token",
             auth=self._auth_credentials,
         )
-        # Raises status error if there is error
-        self._check_error(response)
+        if response.is_error:
+            self._handle_error(response)
 
         data = TokenResponse.model_validate(response.json())
 
@@ -162,16 +173,16 @@ class QPayClient:
             self._base_url + "/auth/refresh",
             headers={"Authorization": f"Bearer {self._refresh_token}"},
         )
-
-        self._check_error(response)
+        if response.is_error:
+            self._handle_error(response)
 
         if response.is_success:
             data = TokenResponse.model_validate(response.json())
 
             self._access_token = data.access_token
             self._refresh_token = data.refresh_token
-            self._access_token_expiry = data.expires_in - self._token_leeway
-            self._refresh_token_expiry = data.refresh_expires_in - self._token_leeway
+            self._access_token_expiry = max(0, data.expires_in - self._token_leeway)
+            self._refresh_token_expiry = max(0, data.expires_in - self._token_leeway)
         else:
             await self._authenticate()
 
@@ -192,9 +203,10 @@ class QPayClient:
             data=create_invoice_request.model_dump(),
         )
 
-        self._check_error(response)
+        if response.is_error:
+            self._handle_error(response)
 
-        data = InvoiceCreateResponse.model_validate_json(response.json())
+        data = InvoiceCreateResponse.model_validate(response.json())
         return data
 
     async def invoice_cancel(
@@ -206,18 +218,20 @@ class QPayClient:
             headers=await self._headers,
         )
 
-        self._check_error(response)
+        if response.is_error:
+            self._handle_error(response)
 
         return response.json()
 
     # Payment
     async def payment_get(self, payment_id: str):
         response = await self._client.get(
-            self._base_url + "/payment/" + payment_id,
+            "/".join([self._base_url, "payment", payment_id]),
             headers=await self._headers,
         )
 
-        self._check_error(response)
+        if response.is_error:
+            self._handle_error(response)
 
         validated_response = Payment.model_validate(response.json())
         return validated_response
@@ -229,9 +243,10 @@ class QPayClient:
             headers=await self._headers,
         )
 
-        self._check_error(response)
-
-        validated_response = PaymentCheckResponse.model_validate_json(response.json())
+        if response.is_error:
+            self._handle_error(response)
+        print(response.json())
+        validated_response = PaymentCheckResponse.model_validate(response.json())
         return validated_response
 
     async def payment_cancel(self, payment_id: str):
@@ -240,7 +255,8 @@ class QPayClient:
             headers=await self._headers,
         )
 
-        self._check_error(response)
+        if response.is_error:
+            self._handle_error(response)
 
         return response.json()
 
@@ -250,7 +266,8 @@ class QPayClient:
             headers=await self._headers,
         )
 
-        self._check_error(response)
+        if response.is_error:
+            self._handle_error(response)
 
         return response.json()
 
@@ -261,9 +278,10 @@ class QPayClient:
             headers=await self._headers,
         )
 
-        self._check_error(response)
+        if response.is_error:
+            self._handle_error(response)
 
-        validated_response = PaymentCheckResponse.model_validate_json(response.json())
+        validated_response = PaymentCheckResponse.model_validate(response.json())
         return validated_response
 
     # ebarimt
@@ -274,18 +292,20 @@ class QPayClient:
             headers=await self._headers,
         )
 
-        self._check_error(response)
+        if response.is_error:
+            self._handle_error(response)
 
-        validated_response = Ebarimt.model_validate_json(response.json())
+        validated_response = Ebarimt.model_validate(response.json())
         return validated_response
 
     async def ebarimt_get(self, barimt_id: str):
         response = await self._client.get(
-            self._base_url + "/ebarimt/" + barimt_id,
+            "/".join([self._base_url, "ebarimt", barimt_id]),
             headers=await self._headers,
         )
 
-        self._check_error(response)
+        if response.is_error:
+            self._handle_error(response)
 
-        validated_response = Ebarimt.model_validate_json(response.json())
+        validated_response = Ebarimt.model_validate(response.json())
         return validated_response
