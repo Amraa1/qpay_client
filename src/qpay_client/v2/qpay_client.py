@@ -125,10 +125,9 @@ class QPayClient:
 
     @property
     async def _headers(self):
-        token = await self.get_token()
         return {
             "Content-Type": "APP_JSON",
-            "Authorization": f"Bearer {token}",
+            "Authorization": f"Bearer {await self.get_token()}",
         }
 
     def _handle_error(self, response: Response):

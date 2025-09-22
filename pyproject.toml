@@ -1,6 +1,6 @@
 [project]
 name = "qpay-client"
-version = "0.2.4"
+version = "0.2.5"
 description = "QPay Integration made easy (async & sync, typed schemas, auto token refresh)"
 readme = "README.md"
 authors = [
