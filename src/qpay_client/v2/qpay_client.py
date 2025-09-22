@@ -196,7 +196,6 @@ class QPayClient:
     async def invoice_create(
         self, create_invoice_request: InvoiceCreateRequest | InvoiceCreateSimpleRequest
     ):
-        print(create_invoice_request.model_dump_json())
         response = await self._client.post(
             self._base_url + "/invoice",
             headers=await self._headers,
