@@ -196,10 +196,13 @@ class QPayClient:
     async def invoice_create(
         self, create_invoice_request: InvoiceCreateRequest | InvoiceCreateSimpleRequest
     ):
+        print(create_invoice_request.model_dump_json())
         response = await self._client.post(
             self._base_url + "/invoice",
             headers=await self._headers,
-            json=create_invoice_request.model_dump_json(),
+            json=create_invoice_request.model_dump(
+                by_alias=True, exclude_none=True, mode="json"
+            ),
         )
 
         if response.is_error:
@@ -239,7 +242,9 @@ class QPayClient:
         response = await self._client.post(
             self._base_url + "/payment/check",
             headers=await self._headers,
-            json=payment_check_request.model_dump_json(),
+            json=payment_check_request.model_dump(
+                by_alias=True, exclude_none=True, mode="json"
+            ),
         )
 
         if response.is_error:
@@ -274,7 +279,9 @@ class QPayClient:
         response = await self._client.post(
             self._base_url + "/payment/list",
             headers=await self._headers,
-            json=payment_list_request.model_dump_json(),
+            json=payment_list_request.model_dump(
+                by_alias=True, exclude_none=True, mode="json"
+            ),
         )
 
         if response.is_error:
@@ -288,7 +295,9 @@ class QPayClient:
         response = await self._client.post(
             self._base_url + "/ebarimt/create",
             headers=await self._headers,
-            json=ebarimt_create_request.model_dump_json(),
+            json=ebarimt_create_request.model_dump(
+                by_alias=True, exclude_none=True, mode="json"
+            ),
         )
 
         if response.is_error:

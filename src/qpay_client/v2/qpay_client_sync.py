@@ -192,7 +192,9 @@ class QPayClientSync:
         response = self._client.post(
             self._base_url + "/invoice",
             headers=self._headers,
-            json=create_invoice_request.model_dump_json(),
+            json=create_invoice_request.model_dump(
+                by_alias=True, exclude_none=True, mode="json"
+            ),
         )
 
         self._check_error(response)
@@ -228,7 +230,9 @@ class QPayClientSync:
     def payment_check(self, payment_check_request: PaymentCheckRequest):
         response = self._client.post(
             self._base_url + "/payment/check",
-            json=payment_check_request.model_dump_json(),
+            json=payment_check_request.model_dump(
+                by_alias=True, exclude_none=True, mode="json"
+            ),
             headers=self._headers,
         )
 
@@ -260,7 +264,9 @@ class QPayClientSync:
     def payment_list(self, payment_list_request: PaymentListRequest):
         response = self._client.post(
             self._base_url + "/payment/list",
-            json=payment_list_request.model_dump_json(),
+            json=payment_list_request.model_dump(
+                by_alias=True, exclude_none=True, mode="json"
+            ),
             headers=self._headers,
         )
 
@@ -273,7 +279,9 @@ class QPayClientSync:
     def ebarimt_create(self, ebarimt_create_request: EbarimtCreateRequest):
         response = self._client.post(
             self._base_url + "/ebarimt/create",
-            json=ebarimt_create_request.model_dump_json(),
+            json=ebarimt_create_request.model_dump(
+                by_alias=True, exclude_none=True, mode="json"
+            ),
             headers=self._headers,
         )
 
