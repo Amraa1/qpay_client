@@ -23,7 +23,12 @@ Example:
     >>> invoice = client.create_invoice(...)
 """
 
+from .error import QPayError
 from .qpay_client import QPayClient
 from .qpay_client_sync import QPayClientSync
 
-__all__ = ["QPayClient", "QPayClientSync"]
+__all__ = [
+    "QPayClient",
+    "QPayClientSync",
+    "QPayError",
+]
