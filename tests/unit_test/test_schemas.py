@@ -267,7 +267,7 @@ def test_payment_minimum_ok_and_required_lists():
             payment_currency=Currency.mnt,
             payment_wallet="qpay",
             payment_type=TransactionType.card,
-        ) # type: ignore
+        )  # type: ignore
 
 
 def test_payment_get_response_requires_tx_lists():
