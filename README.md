@@ -2,11 +2,11 @@
 
 QPay API integration made simpler and safer with data validation and auto token refresh.
 
+This python package includes async and sync client. You can choose which ever suits your project.
+
 Visit links:  
 [Package document](https://pypi.org/project/qpay-client/)  
 [QPay document](https://developer.qpay.mn)
-
-Made with ❤️
 
 ## Features
 
@@ -18,18 +18,18 @@ Made with ❤️
 
 ## API coverage
 
-### Auth 🔐
+### Auth
 
 - ✅ **token** - Used to get token
 - ✅ **refresh** - Used to refresh token
 
-### Invoice 📜
+### Invoice
 
-- ❌ **get** (Please make an issue if you need this!)
-- ✅ **create (simple and complex)**
+- ✅ **get**
+- ✅ **create**
 - ✅ **cancel**
 
-### Payment 💵
+### Payment
 
 - ✅ **get**
 - ✅ **list**
@@ -37,7 +37,7 @@ Made with ❤️
 - ✅ **cancel**
 - ✅ **refund**
 
-### Ebarimt 🧾
+### Ebarimt
 
 - ✅ **get**
 - ✅ **create**
