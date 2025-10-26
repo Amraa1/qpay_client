@@ -1,6 +1,4 @@
-"""
-Pydantic schemas for QPay v2.
-"""
+"""Pydantic schemas for QPay v2."""
 
 from datetime import date, datetime
 from decimal import Decimal
@@ -8,10 +6,12 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from .enums import BankCode, Currency, ObjectTypeNum, PaymentStatus
+from .enums import BankCode, Currency, EbarimtReceiverType, InvoiceStatus, ObjectType, PaymentStatus, TransactionType
 
 
 class TokenResponse(BaseModel):
+    """QPay Token and Refresh token response."""
+
     token_type: str
     access_token: str
     expires_in: float
@@ -47,9 +47,7 @@ class SenderTerminalData(BaseModel):
 class InvoiceReceiverData(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    registration_number: Optional[str] = Field(
-        default=None, alias="register", max_length=20
-    )
+    registration_number: Optional[str] = Field(default=None, alias="register", max_length=20)
     name: Optional[str] = Field(default=None, max_length=100)
     email: Optional[str] = Field(default=None, max_length=255)
     phone: Optional[str] = Field(default=None, max_length=20)
@@ -59,9 +57,7 @@ class InvoiceReceiverData(BaseModel):
 class SenderBranchData(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    registration_number: Optional[str] = Field(
-        default=None, alias="register", max_length=20
-    )
+    registration_number: Optional[str] = Field(default=None, alias="register", max_length=20)
     name: Optional[str] = Field(default=None, max_length=100)
     email: Optional[str] = Field(default=None, max_length=255)
     phone: Optional[str] = Field(default=None, max_length=20)
@@ -89,9 +85,17 @@ class Tax(BaseModel):
     note: Optional[str] = Field(default=None, max_length=255)
 
 
+class Account(BaseModel):
+    account_bank_code: BankCode
+    account_number: str = Field(max_length=100)
+    account_name: str = Field(max_length=100)
+    account_currency: Currency
+    is_default: bool
+
+
 class Line(BaseModel):
-    sender_product_code: Optional[str]
-    tax_product_code: Optional[str]
+    sender_product_code: Optional[str] = None
+    tax_product_code: Optional[str] = None
     line_description: str = Field(max_length=255)
     line_quantity: Decimal = Field(max_digits=20)
     line_unit_price: Decimal = Field(max_digits=20)
@@ -101,6 +105,12 @@ class Line(BaseModel):
     taxes: Optional[list[Tax]] = None
 
 
+class Transaction(BaseModel):
+    description: str = Field(max_length=100)
+    amount: Decimal
+    accounts: Optional[list[Account]] = None
+
+
 class SenderStaffData(BaseModel):
     name: Optional[str] = Field(default=None, max_length=100)
     email: Optional[str] = Field(default=None, max_length=255)
@@ -108,42 +118,53 @@ class SenderStaffData(BaseModel):
 
 
 class InvoiceCreateSimpleRequest(BaseModel):
+    """Create simple invoice."""
+
     invoice_code: str = Field(examples=["TEST_INVOICE"], max_length=45)
     sender_invoice_no: str = Field(examples=["123"], max_length=45)
     invoice_receiver_code: str = Field(max_length=45)
     invoice_description: str = Field(max_length=255)
     sender_branch_code: Optional[str] = Field(default=None, max_length=45)
     amount: Decimal = Field(gt=0)
-    callback_url: str = Field(max_length=255)
+    callback_url: str = Field(
+        max_length=255,
+    )
 
 
 class InvoiceCreateRequest(BaseModel):
+    """Create full invoice."""
+
     invoice_code: str = Field(examples=["TEST_INVOICE"], max_length=45)
     sender_invoice_no: str = Field(max_length=45)
+    invoice_receiver_code: str = Field(max_length=45)
+    amount: Decimal
+    callback_url: str = Field(max_length=255)
+
     sender_branch_code: Optional[str] = Field(default=None, max_length=45)
     sender_branch_data: Optional[SenderBranchData] = None
     sender_staff_code: Optional[str] = Field(default=None, max_length=100)
     sender_staff_data: Optional[SenderStaffData] = None
     sender_terminal_code: Optional[str] = Field(default=None, max_length=45)
     sender_terminal_data: Optional[SenderTerminalData] = None
-    invoice_receiver_code: str = Field(max_length=45)
     invoice_receiver_data: Optional[InvoiceReceiverData] = None
     invoice_description: str = Field(max_length=255)
-    invoice_due_date: Optional[date] = None
+    invoice_due_date: Optional[datetime] = None
     enable_expiry: Optional[bool] = None
-    expiry_date: Optional[date] = None
-    calculate_vat: Optional[bool] = Field(default=None)
+    expiry_date: Optional[datetime] = None
+    calculate_vat: Optional[bool] = None
+    tax_type: Optional[str] = None
     tax_customer_code: Optional[str] = None
-    line_tax_code: Optional[str] = Field(default=None)
-    allow_partial: Optional[bool] = Field(default=None)
+    line_tax_code: Optional[str] = None
     minimum_amount: Optional[Decimal] = None
-    allow_exceed: Optional[bool] = Field(default=None)
     maximum_amount: Optional[Decimal] = None
-    amount: Optional[Decimal] = Field(default=None)
-    callback_url: str = Field(max_length=255)
+    allow_partial: Optional[bool] = None
+    allow_exceed: Optional[bool] = None
+    allow_subscribe: Optional[bool] = None
+    subscription_interval: Optional[str] = None
+    subscription_webhook: Optional[str] = None
     note: Optional[str] = Field(default=None, max_length=1000)
     lines: Optional[list[Line]] = None
-    transactions: Optional[list] = None
+    transactions: Optional[list[Transaction]] = None
 
 
 class InvoiceCreateResponse(BaseModel):
@@ -183,7 +204,41 @@ class Payment(BaseModel):
     trx_fee: Decimal
     payment_currency: Currency
     payment_wallet: str
-    payment_type: str
+    payment_type: TransactionType
+    next_payment_date: Optional[date] = None
+    next_payment_datetime: Optional[datetime] = None
+    card_transactions: list[CardTransaction]
+    p2p_transactions: list[P2PTransaction]
+
+
+class PaymentList(BaseModel):
+    payment_id: str
+    payment_date: datetime
+    payment_status: PaymentStatus
+    payment_fee: Decimal
+    payment_amount: Decimal
+    payment_currency: Currency
+    payment_wallet: str
+    payment_name: str
+    payment_description: str
+    next_payment_date: Optional[date] = None
+    next_payment_datetime: Optional[datetime] = None
+    paid_by: TransactionType
+    object_type: ObjectType
+    object_id: str
+
+
+class PaymentGetResponse(BaseModel):
+    payment_id: str  # p2p -> Decimal | card -> str,UUID
+    payment_status: PaymentStatus
+    payment_amount: Decimal
+    payment_fee: Decimal
+    payment_currency: Currency
+    payment_date: datetime
+    payment_wallet: str
+    transaction_type: TransactionType
+    object_type: ObjectType
+    object_id: str
     next_payment_date: Optional[date] = None
     next_payment_datetime: Optional[datetime] = None
     card_transactions: list[CardTransaction]
@@ -191,8 +246,12 @@ class Payment(BaseModel):
 
 
 class Offset(BaseModel):
-    page_number: Decimal = Field(default=Decimal(1), ge=1, le=100)
-    page_limit: Decimal = Field(default=Decimal(10), ge=1, le=100)
+    page_number: int = Field(ge=1)
+    page_limit: int = Field(ge=1, le=1000)
+
+
+class PaymentRefundRequest(BaseModel):
+    note: Optional[str] = Field(default=None, max_length=255)
 
 
 class PaymentCheckResponse(BaseModel):
@@ -202,9 +261,9 @@ class PaymentCheckResponse(BaseModel):
 
 
 class PaymentCheckRequest(BaseModel):
-    object_type: ObjectTypeNum
+    object_type: ObjectType
     object_id: str = Field(max_length=50)
-    offset: Optional[Offset] = Field(default_factory=Offset)
+    offset: Offset
 
 
 class CancelPaymentRequest(Payment):
@@ -214,7 +273,7 @@ class CancelPaymentRequest(Payment):
 
 class EbarimtCreateRequest(BaseModel):
     payment_id: str
-    ebarimt_receiver_type: str
+    ebarimt_receiver_type: EbarimtReceiverType
     ebarimt_receiver: Optional[str] = None
     callback_url: Optional[str] = None
 
@@ -224,25 +283,25 @@ class Ebarimt(BaseModel):
     ebarimt_by: str
     g_wallet_id: str
     g_wallet_customer_id: str
-    ebarim_receiver_type: str
-    ebarimt_receiver: str
+    ebarim_receiver_type: EbarimtReceiverType
+    ebarimt_receiver: Optional[str] = None
     ebarimt_district_code: str
     ebarimt_bill_type: str
     g_merchant_id: str
     merchant_branch_code: str
-    merchant_terminal_code: str
-    merchant_staff_code: str
-    merchant_register: Decimal
+    merchant_terminal_code: Optional[str] = None
+    merchant_staff_code: Optional[str] = None
+    merchant_register: Optional[Decimal] = None
     g_payment_id: Decimal
-    paid_by: str
-    object_type: str
+    paid_by: TransactionType
+    object_type: ObjectType
     object_id: str
     amount: Decimal
     vat_amount: Decimal
     city_tax_amount: Decimal
     ebarimt_qr_data: str
     ebarimt_lottery: str
-    note: str
+    note: Optional[str] = None
     ebarimt_status: str
     ebarimt_status_date: datetime
     tax_type: str
@@ -253,14 +312,57 @@ class Ebarimt(BaseModel):
     status: bool
 
 
+class EbarimtGetResponse(Ebarimt):
+    pass
+
+
+class EbarimtCreateResponse(Ebarimt):
+    pass
+
+
 class PaymentListRequest(BaseModel):
-    object_type: str
+    object_type: ObjectType
     object_id: str
     start_date: datetime
     end_date: datetime
     offset: Offset
 
 
+class PaymentListResponse(BaseModel):
+    count: int
+    rows: list[PaymentList]
+
+
 class PaymentCancelRequest(BaseModel):
     callback_url: Optional[str] = None
     note: Optional[str] = None
+
+
+class InvoiceGetResponse(BaseModel):
+    invoice_id: str
+    invoice_status: InvoiceStatus
+    sender_invoice_no: str = Field(max_length=45)
+    sender_branch_code: Optional[str] = Field(default=None, max_length=45)
+    sender_branch_data: Optional[SenderBranchData] = None
+    sender_staff_code: Optional[str] = Field(default=None, max_length=100)
+    sender_staff_data: Optional[SenderStaffData] = None
+    sender_terminal_code: Optional[str] = Field(default=None, max_length=45)
+    sender_terminal_data: Optional[SenderTerminalData] = None
+    invoice_description: str = Field(max_length=255)
+    invoice_due_date: Optional[datetime] = None
+    enable_expiry: Optional[bool] = None
+    expiry_date: Optional[datetime] = None
+    minimum_amount: Optional[Decimal] = None
+    maximum_amount: Optional[Decimal] = None
+    allow_partial: Optional[bool] = None
+    allow_exceed: Optional[bool] = None
+    total_amount: Decimal
+    gross_amount: Decimal
+    tax_amount: Decimal
+    surcharge_amount: Decimal
+    callback_url: str
+    note: Optional[str] = None
+    lines: Optional[list[Line]] = None
+    transactions: Optional[list[Transaction]] = None
+    inputs: list
+    payments: Optional[list[Payment]] = None

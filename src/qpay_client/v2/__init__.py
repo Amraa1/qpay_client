@@ -1,5 +1,4 @@
-"""
-qpay_client.v2
+"""qpay_client.v2
 ==============
 
 This package provides the official `v2` client interfaces for integrating with
@@ -21,11 +20,12 @@ Example:
     >>> from qpay_client.v2 import QPayClientSync
     >>> client = QPayClientSync(...)
     >>> invoice = client.create_invoice(...)
+
 """
 
+from .client import QPayClient
 from .error import QPayError
-from .qpay_client import QPayClient
-from .qpay_client_sync import QPayClientSync
+from .sync_client import QPayClientSync
 
 __all__ = [
     "QPayClient",

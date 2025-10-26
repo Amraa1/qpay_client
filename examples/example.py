@@ -4,7 +4,7 @@ from decimal import Decimal
 from fastapi import FastAPI, status
 
 from qpay_client.v2 import QPayClient
-from qpay_client.v2.enums import ObjectTypeNum
+from qpay_client.v2.enums import ObjectType
 from qpay_client.v2.schemas import InvoiceCreateSimpleRequest, PaymentCheckRequest
 
 client = QPayClient(
@@ -54,7 +54,7 @@ async def qpay_callback(payment_id: str):
     invoice_id = str(data["invoice_id"])
     response = await client.payment_check(
         PaymentCheckRequest(
-            object_type=ObjectTypeNum.invoice,
+            object_type=ObjectType.invoice,
             object_id=invoice_id,
         )
     )

@@ -1,10 +1,8 @@
-from enum import StrEnum
+from enum import Enum
 
 
-class Currency(StrEnum):
-    """
-    Currency code used in QPay.
-    """
+class Currency(str, Enum):
+    """Currency code used in QPay."""
 
     mnt = "MNT"
     usd = "USD"
@@ -14,22 +12,39 @@ class Currency(StrEnum):
     eur = "EUR"
 
 
-class PaymentStatus(StrEnum):
-    """
-    Payment status received from payment get request.
-    """
+class InvoiceStatus(str, Enum):
+    """Invoice status."""
+
+    open = "OPEN"
+    closed = "CLOSED"
+
+
+class TransactionType(str, Enum):
+    """The type of payment."""
+
+    p2p = "P2P"
+    card = "CARD"
+
+
+class PaymentStatus(str, Enum):
+    """Payment status received from payment get request."""
 
     new = "NEW"
     failed = "FAILED"
     paid = "PAID"
     partial = "PARTIAL"
-    refunded = "REFUNDED"
+    refund = "REFUND"
 
 
-class BankCode(StrEnum):
-    """
-    Bank codes provided by QPay.
-    """
+class EbarimtReceiverType(str, Enum):
+    """Ebarimt receiver type."""
+
+    citizen = "CITIZEN"
+    company = "COMPANY"
+
+
+class BankCode(str, Enum):
+    """Bank codes provided by QPay."""
 
     bank_of_mongolia = "010000"
     capital_bank = "020000"
@@ -53,11 +68,15 @@ class BankCode(StrEnum):
     test_bank = "100000"
 
 
-class ObjectTypeNum(StrEnum):
-    """
-    Object types provided by QPay.
-    """
+class ObjectType(str, Enum):
+    """Object types provided by QPay."""
 
     invoice = "INVOICE"
     qr = "QR"
     item = "ITEM"
+
+
+class TaxType(int, Enum):
+    with_tax = 1
+    without_tax = 2
+    exclude_tax = 3
