@@ -3,6 +3,8 @@
 ![Tests](https://github.com/Amraa1/qpay_client/actions/workflows/test.yml/badge.svg)
 ![PyPI - Version](https://img.shields.io/pypi/v/qpay-client)
 ![Python](https://img.shields.io/pypi/pyversions/qpay-client.svg)
+![PyPI - License](https://img.shields.io/pypi/l/qpay-client)
+![PyPI - Downloads](https://img.shields.io/pypi/dw/qpay-client)
 
 QPay API integration made simpler and safer with data validation and auto token refresh.
 
