@@ -1,5 +1,9 @@
 # QPay API Integration client
 
+![Tests](https://github.com/Amraa1/qpay_client/actions/workflows/test.yml/badge.svg)
+![PyPI - Version](https://img.shields.io/pypi/v/qpay-client)
+![Python](https://img.shields.io/pypi/pyversions/qpay-client.svg)
+
 QPay API integration made simpler and safer with data validation and auto token refresh.
 
 This python package includes async and sync client. You can choose which ever suits your project.
