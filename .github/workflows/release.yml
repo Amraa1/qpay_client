@@ -24,7 +24,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          python-version: "3.9"
 
       - uses: astral-sh/setup-uv@v7
       - run: uv build
@@ -46,7 +46,7 @@ jobs:
     # Dedicated environments with protections for publishing are strongly recommended.
     # For more information, see: https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#deployment-protection-rules
     environment:
-      name: pypi
+      name: release
       # OPTIONAL: uncomment and update to include your PyPI project URL in the deployment status:
       url: https://pypi.org/project/qpay-client/
       #
