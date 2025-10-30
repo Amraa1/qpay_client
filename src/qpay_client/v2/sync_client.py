@@ -29,7 +29,8 @@ logger = logging.getLogger("qpay")
 
 
 class QPayClientSync:
-    """Synchronous client for QPay v2 API.
+    """
+    Synchronous client for QPay v2 API.
 
     This client handles authentication, token refresh, and provides sync
     methods for interacting with QPay v2 endpoints (invoices, payments,
@@ -156,7 +157,8 @@ class QPayClientSync:
         }
 
     def _authenticate(self):
-        """Used for server authentication.
+        """
+        Used for server authentication.
 
         Note:
             DO NOT CALL THIS FUNCTION!

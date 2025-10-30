@@ -29,7 +29,8 @@ logger = logging.getLogger("qpay")
 
 
 class QPayClient:
-    """Asynchronous client for QPay v2 API.
+    """
+    Asynchronous client for QPay v2 API.
 
     This client handles authentication, token refresh, and provides async
     methods for interacting with QPay v2 endpoints (invoices, payments,
@@ -286,7 +287,8 @@ class QPayClient:
         delay: float = 0.5,
         jitter: float = 0.5,
     ):
-        """Send check payment request to qpay.
+        """
+        Send check payment request to qpay.
 
         When payment retries is more than 0, client polls qpay until count > 0 or the retry amount is reached.
         """

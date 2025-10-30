@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 
 import pytest
+from pydantic import ValidationError
 
 from qpay_client.v2.enums import (
     BankCode,
@@ -83,7 +84,7 @@ def test_qpay_deeplink_and_address_and_sender_terminal_data():
 
     addr = Address(city="Ulaanbaatar", zipcode="15160")
     assert addr.city == "Ulaanbaatar"
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         Address(city="x" * 101)  # > 100
 
     term = SenderTerminalData(name="POS-01")
@@ -147,7 +148,7 @@ def test_invoice_create_simple_request_positive_amount_and_bounds():
     )
     assert req.amount == Decimal("100.00")
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         InvoiceCreateSimpleRequest(
             invoice_code="TEST_INVOICE",
             sender_invoice_no="INV-1",
@@ -258,7 +259,7 @@ def test_payment_minimum_ok_and_required_lists():
     assert p.payment_status == PaymentStatus.paid
 
     # Omit required lists — should fail
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         Payment(
             payment_id="pid-2",
             payment_status=PaymentStatus.paid,
@@ -290,7 +291,7 @@ def test_payment_get_response_requires_tx_lists():
 
     bad = dict(payload)
     bad.pop("card_transactions")
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         PaymentGetResponse.model_validate(bad)
 
 
@@ -322,9 +323,9 @@ def test_payment_list_and_response():
 def test_offset_bounds_and_refund_note_optional():
     ok = Offset(page_number=1, page_limit=1000)
     assert ok.page_number == 1
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         Offset(page_number=0, page_limit=10)
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         Offset(page_number=1, page_limit=1001)
 
     r1 = PaymentRefundRequest()

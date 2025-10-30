@@ -23,6 +23,7 @@ from src.qpay_client.v2.sync_client import QPayClientSync as _QPayClientSync
 class FakeHttpxClient:
     """
     Minimal synchronous httpx-like client with a queue of responses.
+
     Each .request() pops the next response and records the call.
     """
 
@@ -98,7 +99,8 @@ class FakeAuthState:
 
 @pytest.fixture
 def Client(monkeypatch):
-    """QPayClientSync class.
+    """
+    QPayClientSync class.
 
     - QpayAuthState patched to FakeAuthState
     - handle_error replaced with a raiser so we can assert it ran

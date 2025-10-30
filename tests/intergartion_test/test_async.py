@@ -137,7 +137,8 @@ async def test_invoice_lifecycle_create_get_cancel_payment_check_and_list():
 
 @skip_live
 async def test_payment_cancel_and_refund_fail_gracefully_for_unpaid():
-    """In sandbox, cancel/refund needs a PAID payment_id.
+    """
+    In sandbox, cancel/refund needs a PAID payment_id.
 
     We demonstrate the endpoints return non-2xx (or error JSON) for an unpaid/random payment_id,
     and ensure client surfaces status/error per implementation.
