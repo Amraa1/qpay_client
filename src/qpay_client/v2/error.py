@@ -78,123 +78,137 @@ class QPayErrorKey(str, Enum):
 
 
 QpayErrorDetail = {
-    QPayErrorKey.account_bank_duplicated: QpayErrorDescription(
+    QPayErrorKey.account_bank_duplicated.value: QpayErrorDescription(
         en="Bank account is already registered!", mn="Банкны данс давхацсан байна"
     ),
-    QPayErrorKey.account_selection_invalid: QpayErrorDescription(
+    QPayErrorKey.account_selection_invalid.value: QpayErrorDescription(
         en="Account selection is invalid!", mn="Дансны сонголт буруу"
     ),
-    QPayErrorKey.authentication_failed: QpayErrorDescription(
+    QPayErrorKey.authentication_failed.value: QpayErrorDescription(
         en="Your username and password are wrong!", mn="Нэвтрэх нэр нууц үг буруу"
     ),
-    QPayErrorKey.bank_account_notfound: QpayErrorDescription(
+    QPayErrorKey.bank_account_notfound.value: QpayErrorDescription(
         en="Bank account is not found!", mn="Банкны данс олдсонгүй"
     ),
-    QPayErrorKey.bank_mcc_already_added: QpayErrorDescription(
+    QPayErrorKey.bank_mcc_already_added.value: QpayErrorDescription(
         en="Bank MCC is already added!", mn="Банкны MCC кодыг нэмчихсэн байна"
     ),
-    QPayErrorKey.bank_mcc_not_found: QpayErrorDescription(en="Bank MCC is not found!", mn="Банкны MCC код олдсонгүй"),
-    QPayErrorKey.card_terminal_notfound: QpayErrorDescription(
+    QPayErrorKey.bank_mcc_not_found.value: QpayErrorDescription(
+        en="Bank MCC is not found!", mn="Банкны MCC код олдсонгүй"
+    ),
+    QPayErrorKey.card_terminal_notfound.value: QpayErrorDescription(
         en="Card terminal is not registered!", mn="Картын терминал бүртгэлгүй байна"
     ),
-    QPayErrorKey.client_notfound: QpayErrorDescription(
+    QPayErrorKey.client_notfound.value: QpayErrorDescription(
         en="Client is not registered!", mn="Клиентийн бүртгэл олдсонгүй"
     ),
-    QPayErrorKey.client_username_duplicated: QpayErrorDescription(
+    QPayErrorKey.client_username_duplicated.value: QpayErrorDescription(
         en="Client username is already exist!", mn="Клиентийн хэрэглэгчийн нэр давхацсан"
     ),
-    QPayErrorKey.customer_duplicate: QpayErrorDescription(
+    QPayErrorKey.customer_duplicate.value: QpayErrorDescription(
         en="Customer register duplicated!", mn="Харилцагчийн регистрийн дугаар давхацсан байна!"
     ),
-    QPayErrorKey.customer_notfound: QpayErrorDescription(
+    QPayErrorKey.customer_notfound.value: QpayErrorDescription(
         en="Customer not registered!", mn="Харилцагч бүртгэгдээгүй байна!"
     ),
-    QPayErrorKey.customer_register_invalid: QpayErrorDescription(
+    QPayErrorKey.customer_register_invalid.value: QpayErrorDescription(
         en="Customer register is wrong!", mn="Харилцагч регистрийн дугаар байна!"
     ),
-    QPayErrorKey.ebarimt_cancel_notsupperded: QpayErrorDescription(
+    QPayErrorKey.ebarimt_cancel_notsupperded.value: QpayErrorDescription(
         en="qPay service eBarimt unregister function not supported",
         mn="qPay үйлчилгээ и-баримтыг цуцлах боломжгүй байна.",
     ),
-    QPayErrorKey.ebarimt_not_registered: QpayErrorDescription(
+    QPayErrorKey.ebarimt_not_registered.value: QpayErrorDescription(
         en="eBarimt not registered!", mn="и-Баримт үүсээгүй байна."
     ),
-    QPayErrorKey.ebarimt_qr_code_invalid: QpayErrorDescription(
+    QPayErrorKey.ebarimt_qr_code_invalid.value: QpayErrorDescription(
         en="eBarimt QR code invalid by merchant", mn="Төлбөр хүлээн авагчийн илгээсэн и-баримт-ын QR код буруу байна."
     ),
-    QPayErrorKey.inform_notfound: QpayErrorDescription(en="Inform is not found!", mn="Мэдэгдэлийн хаяг олдсонгүй"),
-    QPayErrorKey.input_code_registered: QpayErrorDescription(
+    QPayErrorKey.inform_notfound.value: QpayErrorDescription(
+        en="Inform is not found!", mn="Мэдэгдэлийн хаяг олдсонгүй"
+    ),
+    QPayErrorKey.input_code_registered.value: QpayErrorDescription(
         en="Input code is already registered!", mn="Input олдсонгүй"
     ),
-    QPayErrorKey.input_notfound: QpayErrorDescription(en="Input not registered!", mn="Банкны данс давхацсан байна"),
-    QPayErrorKey.invalid_amount: QpayErrorDescription(en="Amount is invalid!", mn="Үнийн дүн буруу"),
-    QPayErrorKey.invalid_object_type: QpayErrorDescription(en="Object type is invalid!", mn="object_type буруу"),
-    QPayErrorKey.invoice_already_canceled: QpayErrorDescription(
+    QPayErrorKey.input_notfound.value: QpayErrorDescription(
+        en="Input not registered!", mn="Банкны данс давхацсан байна"
+    ),
+    QPayErrorKey.invalid_amount.value: QpayErrorDescription(en="Amount is invalid!", mn="Үнийн дүн буруу"),
+    QPayErrorKey.invalid_object_type.value: QpayErrorDescription(en="Object type is invalid!", mn="object_type буруу"),
+    QPayErrorKey.invoice_already_canceled.value: QpayErrorDescription(
         en="Invoice is already cancelled!", mn="Нэхэмжлэл цуцлагдсан байна"
     ),
-    QPayErrorKey.invoice_code_invalid: QpayErrorDescription(en="Invoice code is wrong!", mn="Нэхэмжлэлийн код буруу"),
-    QPayErrorKey.invoice_code_registered: QpayErrorDescription(
+    QPayErrorKey.invoice_code_invalid.value: QpayErrorDescription(
+        en="Invoice code is wrong!", mn="Нэхэмжлэлийн код буруу"
+    ),
+    QPayErrorKey.invoice_code_registered.value: QpayErrorDescription(
         en="Invoice code is already registered!", mn="Нэхэмжлэлийн код бүртгэгдсэн байна"
     ),
-    QPayErrorKey.invoice_line_required: QpayErrorDescription(
+    QPayErrorKey.invoice_line_required.value: QpayErrorDescription(
         en="Invoice line is required!", mn="Нэхэмжлэлийн мөр шаардлагатай"
     ),
-    QPayErrorKey.invoice_notfound: QpayErrorDescription(en="Invoice is not found!", mn="Нэхэмжлэл олдсонгүй"),
-    QPayErrorKey.invoice_paid: QpayErrorDescription(en="Invoice is paid!", mn="Нэхэмжлэл төлөгдсөн"),
-    QPayErrorKey.invoice_receiver_data_address_required: QpayErrorDescription(
+    QPayErrorKey.invoice_notfound.value: QpayErrorDescription(en="Invoice is not found!", mn="Нэхэмжлэл олдсонгүй"),
+    QPayErrorKey.invoice_paid.value: QpayErrorDescription(en="Invoice is paid!", mn="Нэхэмжлэл төлөгдсөн"),
+    QPayErrorKey.invoice_receiver_data_address_required.value: QpayErrorDescription(
         en="Invoice receiver address is required!", mn="Нэхэмжлэл хүлээн авагчийн хаягийн мэдээлэл шаардлагатай"
     ),
-    QPayErrorKey.invoice_receiver_data_email_required: QpayErrorDescription(
+    QPayErrorKey.invoice_receiver_data_email_required.value: QpayErrorDescription(
         en="Нэхэмжлэл хүлээн авагчийн имэйл хаяг шаардлагатай", mn="Invoice receiver email is required!"
     ),
-    QPayErrorKey.invoice_receiver_data_phone_required: QpayErrorDescription(
+    QPayErrorKey.invoice_receiver_data_phone_required.value: QpayErrorDescription(
         en="Invoice receiver phone is required!", mn="Нэхэмжлэл хүлээн авагчийн утасны дугаар шаардлагатай"
     ),
-    QPayErrorKey.invoice_receiver_data_required: QpayErrorDescription(
+    QPayErrorKey.invoice_receiver_data_required.value: QpayErrorDescription(
         en="Invoice receiver data is required!", mn="Нэхэмжлэл хүлээн авагчийн мэдээлэл шаардлагатай"
     ),
-    QPayErrorKey.max_amount_err: QpayErrorDescription(en="Amount is over than max value!", mn="Үнийн дүн хэт их байна"),
-    QPayErrorKey.mcc_notfound: QpayErrorDescription(en="MCC is not found!", mn="MCC код олдсонгүй"),
-    QPayErrorKey.merchant_already_registered: QpayErrorDescription(
+    QPayErrorKey.max_amount_err.value: QpayErrorDescription(
+        en="Amount is over than max value!", mn="Үнийн дүн хэт их байна"
+    ),
+    QPayErrorKey.mcc_notfound.value: QpayErrorDescription(en="MCC is not found!", mn="MCC код олдсонгүй"),
+    QPayErrorKey.merchant_already_registered.value: QpayErrorDescription(
         en="Merchant is already registered!", mn="Мерчантын бүртгэл давхацсан"
     ),
-    QPayErrorKey.merchant_inactive: QpayErrorDescription(en="Merchant is inactive!", mn="Мерчант идэвхигүй"),
-    QPayErrorKey.merchant_notfound: QpayErrorDescription(
+    QPayErrorKey.merchant_inactive.value: QpayErrorDescription(en="Merchant is inactive!", mn="Мерчант идэвхигүй"),
+    QPayErrorKey.merchant_notfound.value: QpayErrorDescription(
         en="Merchant is not registered!", mn="Мерчант бүртгэлгүй байна"
     ),
-    QPayErrorKey.min_amount_err: QpayErrorDescription(
+    QPayErrorKey.min_amount_err.value: QpayErrorDescription(
         en="Amount is less than minimum value!", mn="Үнийн дүн хэт бага байна"
     ),
-    QPayErrorKey.no_credendials: QpayErrorDescription(
+    QPayErrorKey.no_credendials.value: QpayErrorDescription(
         en="Your credential is invalid. Please login!", mn="Хандах эрхгүй байна. Нэвтрэнэ үү."
     ),
-    QPayErrorKey.object_data_error: QpayErrorDescription(en="Object data is wrong!", mn="object_data алдаа"),
-    QPayErrorKey.p2p_terminal_notfound: QpayErrorDescription(
+    QPayErrorKey.object_data_error.value: QpayErrorDescription(en="Object data is wrong!", mn="object_data алдаа"),
+    QPayErrorKey.p2p_terminal_notfound.value: QpayErrorDescription(
         en="P2P terminal is not registered!", mn="P2P терминал бүртгэлгүй байна"
     ),
-    QPayErrorKey.payment_already_canceled: QpayErrorDescription(
+    QPayErrorKey.payment_already_canceled.value: QpayErrorDescription(
         en="Payment is already cancelled!", mn="Төлбөр цуцлагдсан байна"
     ),
-    QPayErrorKey.payment_not_paid: QpayErrorDescription(en="Payment is not paid!", mn="Төлбөр төлөлт хийгдээгүй байна"),
-    QPayErrorKey.payment_notfound: QpayErrorDescription(en="Payment is not found!", mn="Төлбөр олдсонгүй"),
-    QPayErrorKey.permission_denied: QpayErrorDescription(
+    QPayErrorKey.payment_not_paid.value: QpayErrorDescription(
+        en="Payment is not paid!", mn="Төлбөр төлөлт хийгдээгүй байна"
+    ),
+    QPayErrorKey.payment_notfound.value: QpayErrorDescription(en="Payment is not found!", mn="Төлбөр олдсонгүй"),
+    QPayErrorKey.permission_denied.value: QpayErrorDescription(
         en="Your access permission is not allowed!", mn="Хандах эрх хүрэхгүй байна"
     ),
-    QPayErrorKey.qraccount_inactive: QpayErrorDescription(en="QR account is inactive!", mn="QR данс идэвхигүй"),
-    QPayErrorKey.qraccount_notfound: QpayErrorDescription(en="QR account is not found!", mn="QR данс олдсонгүй"),
-    QPayErrorKey.qrcode_notfound: QpayErrorDescription(en="QR code is not found!", mn="QR код олдсонгүй"),
-    QPayErrorKey.qrcode_used: QpayErrorDescription(en="QR code is already used!", mn="QR код ашиглагдаж байна"),
-    QPayErrorKey.sender_branch_data_required: QpayErrorDescription(
+    QPayErrorKey.qraccount_inactive.value: QpayErrorDescription(en="QR account is inactive!", mn="QR данс идэвхигүй"),
+    QPayErrorKey.qraccount_notfound.value: QpayErrorDescription(en="QR account is not found!", mn="QR данс олдсонгүй"),
+    QPayErrorKey.qrcode_notfound.value: QpayErrorDescription(en="QR code is not found!", mn="QR код олдсонгүй"),
+    QPayErrorKey.qrcode_used.value: QpayErrorDescription(en="QR code is already used!", mn="QR код ашиглагдаж байна"),
+    QPayErrorKey.sender_branch_data_required.value: QpayErrorDescription(
         en="Sender branch data is required!", mn="Илгээгчийн салбарын мэдээлэл шаардлагатай"
     ),
-    QPayErrorKey.tax_line_required: QpayErrorDescription(en="Tax line is required!", mn="Татварын мөр шаардлагатай"),
-    QPayErrorKey.tax_product_code_required: QpayErrorDescription(
+    QPayErrorKey.tax_line_required.value: QpayErrorDescription(
+        en="Tax line is required!", mn="Татварын мөр шаардлагатай"
+    ),
+    QPayErrorKey.tax_product_code_required.value: QpayErrorDescription(
         en="Tax product code is required!", mn="Татварын бүтээгдэхүүний код шаардлагатай"
     ),
-    QPayErrorKey.transaction_not_approved: QpayErrorDescription(
+    QPayErrorKey.transaction_not_approved.value: QpayErrorDescription(
         en="Transaction line is not approved!", mn="Гүйлгээний мөр зөвшөөрөгдөөгүй байна"
     ),
-    QPayErrorKey.transaction_required: QpayErrorDescription(
+    QPayErrorKey.transaction_required.value: QpayErrorDescription(
         en="Transaction line is required!", mn="Гүйлгээний мөр шаардлагатай байна"
     ),
 }
@@ -203,7 +217,7 @@ QpayErrorDetail = {
 class QPayError(Exception):
     """Raised when Qpay server returns error."""
 
-    def __init__(self, *, status_code: QPayErrorCode, error_key: QPayErrorKey) -> None:
+    def __init__(self, *, status_code: int, error_key: str) -> None:
         self.status_code = status_code
         self.error_key = error_key
         self.error_detail = QpayErrorDetail.get(self.error_key, "No description.")

@@ -2,7 +2,7 @@ from logging import Logger
 
 from httpx import Response
 
-from .error import QPayError, QPayErrorCode, QPayErrorKey
+from .error import QPayError
 
 
 def safe_json(response: Response) -> dict[str, str]:
@@ -17,6 +17,4 @@ def handle_error(response: Response, logger: Logger):
     """Used for handling qpay server errors."""
     error_data = safe_json(response)
     logger.error(f"QPayError {response.status_code} error: {error_data}")
-    raise QPayError(
-        status_code=QPayErrorCode(response.status_code), error_key=QPayErrorKey(error_data.get("message", ""))
-    )
+    raise QPayError(status_code=response.status_code, error_key=error_data.get("message", ""))
