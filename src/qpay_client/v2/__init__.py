@@ -1,5 +1,4 @@
-"""qpay_client.v2
-==============
+"""qpay_client.v2.
 
 This package provides the official `v2` client interfaces for integrating with
 QPay`s API, consistent with the QPay v2 documentation.

@@ -20,6 +20,7 @@ from .schemas import (
     PaymentListRequest,
     PaymentListResponse,
     PaymentRefundRequest,
+    SubscriptionGetResponse,
     TokenResponse,
 )
 from .utils import handle_error
@@ -81,7 +82,7 @@ class QPayClientSync:
         username: str = "TEST_MERCHANT",
         password: str = "123456",
         is_sandbox: bool = True,
-        timeout=Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0),
+        timeout: Optional[Timeout] = None,
         base_url: Optional[str] = None,
         token_leeway=60,
         logger=logger,
@@ -100,6 +101,9 @@ class QPayClientSync:
         else:
             # prod environment
             self._base_url = "https://merchant.qpay.mn/v2"
+
+        if timeout is None:
+            timeout = Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0)
 
         self._client = Client(base_url=self._base_url, timeout=timeout)
 
@@ -157,6 +161,7 @@ class QPayClientSync:
         Note:
             DO NOT CALL THIS FUNCTION!
             The client manages the tokens.
+
         """
         response = self._request("POST", "/auth/token", auth=self._auth_credentials)
 
@@ -203,6 +208,7 @@ class QPayClientSync:
         return data
 
     def invoice_create(self, create_invoice_request: Union[InvoiceCreateRequest, InvoiceCreateSimpleRequest]):
+        """Create invoice."""
         response = self._request(
             "POST",
             "/invoice",
@@ -331,3 +337,24 @@ class QPayClientSync:
 
         data = EbarimtGetResponse.model_validate(response.json())
         return data
+
+    def subscription_get(self, subscription_id: str):
+        """Send get subscription request."""
+        response = self._request(
+            "GET",
+            "/subscription/" + subscription_id,
+            headers=self._headers(),
+        )
+
+        data = SubscriptionGetResponse.model_validate(response.json())
+        return data
+
+    def subscription_cancel(self, subscription_id: str):
+        """Send cancel subscription request."""
+        response = self._request(
+            "DELETE",
+            "/subscription/" + subscription_id,
+            headers=self._headers(),
+        )
+
+        return response.status_code

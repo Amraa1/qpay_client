@@ -76,7 +76,16 @@ class ObjectType(str, Enum):
     item = "ITEM"
 
 
-class TaxType(int, Enum):
-    with_tax = 1
-    without_tax = 2
-    exclude_tax = 3
+class TaxType(str, Enum):
+    """QPay tax types."""
+
+    with_tax = "1"
+    without_tax = "2"
+    exclude_tax = "3"
+
+
+class TaxCode(str, Enum):
+    """QPay tax code."""
+
+    city_tax = "CITY_TAX"
+    vat = "VAT"

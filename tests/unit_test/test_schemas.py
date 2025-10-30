@@ -365,7 +365,7 @@ def test_cancel_payment_request_inherits_payment_and_adds_fields():
         callback_url="https://ex.com/cb",
         note="Fraud suspected",
     )
-    assert c.callback_url.endswith("/cb")
+    assert c.callback_url == "https://ex.com/cb"
     assert c.note.startswith("Fraud")
 
 

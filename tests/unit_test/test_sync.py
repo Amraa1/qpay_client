@@ -6,12 +6,12 @@ from decimal import Decimal
 import httpx
 import pytest
 
-import qpay_client.v2.enums as E
-import qpay_client.v2.schemas as S
-import qpay_client.v2.sync_client as client_mod
+import src.qpay_client.v2.enums as E
+import src.qpay_client.v2.schemas as S
+import src.qpay_client.v2.sync_client as client_mod
 
 # ---------- Adjust these imports to your actual package path ----------
-from qpay_client.v2.sync_client import QPayClientSync as _QPayClientSync
+from src.qpay_client.v2.sync_client import QPayClientSync as _QPayClientSync
 
 # ---------------------------------------------------------------------
 
@@ -98,10 +98,10 @@ class FakeAuthState:
 
 @pytest.fixture
 def Client(monkeypatch):
-    """
-    Returns a QPayClientSync class with:
-      - QpayAuthState patched to FakeAuthState
-      - handle_error replaced with a raiser so we can assert it ran
+    """QPayClientSync class.
+
+    - QpayAuthState patched to FakeAuthState
+    - handle_error replaced with a raiser so we can assert it ran
     """
     # Patch state
     monkeypatch.setattr(client_mod, "QpayAuthState", FakeAuthState)
@@ -138,7 +138,7 @@ def minimal_invoice_get_payload():
         "gross_amount": str(Decimal("100")),
         "tax_amount": str(Decimal("0")),
         "surcharge_amount": str(Decimal("0")),
-        "callback_url": "https://cb",
+        "callback_url": "https://cb.com",
         "inputs": [],
     }
 
@@ -373,7 +373,7 @@ def test_invoice_get_create_cancel(Client):
         invoice_receiver_code="terminal",
         invoice_description="desc",
         amount=Decimal("100"),
-        callback_url="https://cb",
+        callback_url="https://cb.com",
     )
     created = c.invoice_create(req)
     assert created.invoice_id == "INV-NEW"
@@ -498,7 +498,7 @@ def test_ebarimt_create_and_get(Client):
         S.EbarimtCreateRequest(
             payment_id="PID",
             ebarimt_receiver_type=E.EbarimtReceiverType.citizen,
-            callback_url="https://cb",
+            callback_url="https://callback.com",
         )
     )
     assert created.id == "e1"

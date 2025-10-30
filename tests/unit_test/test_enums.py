@@ -51,6 +51,6 @@ def test_object_type_enum():
 
 
 def test_tax_type_enum():
-    assert TaxType.with_tax == 1
-    assert TaxType.without_tax == 2
-    assert TaxType.exclude_tax == 3
+    assert TaxType.with_tax == "1"
+    assert TaxType.without_tax == "2"
+    assert TaxType.exclude_tax == "3"

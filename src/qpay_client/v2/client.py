@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from random import random
-from typing import Optional, Union
+from typing import Optional, Union, overload
 
 from httpx import AsyncClient, BasicAuth, Headers, Response, Timeout
 
@@ -20,6 +20,7 @@ from .schemas import (
     PaymentListRequest,
     PaymentListResponse,
     PaymentRefundRequest,
+    SubscriptionGetResponse,
     TokenResponse,
 )
 from .utils import handle_error
@@ -79,7 +80,7 @@ class QPayClient:
         password: str = "123456",
         *,
         is_sandbox: bool = True,
-        timeout=Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0),
+        timeout: Optional[Timeout] = None,
         base_url: Optional[str] = None,
         token_leeway: float = 60,
         logger=logger,
@@ -108,6 +109,10 @@ class QPayClient:
 
         self._logger = logger
         self._logger.setLevel(log_level)
+
+        # Default timeout if timeout is None
+        if timeout is None:
+            timeout = Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0)
 
         # Async connections to qpay server
         self._client = AsyncClient(base_url=self._base_url, timeout=timeout)
@@ -229,7 +234,15 @@ class QPayClient:
         data = InvoiceGetResponse.model_validate(response.json())
         return data
 
-    async def invoice_create(self, create_invoice_request: Union[InvoiceCreateRequest, InvoiceCreateSimpleRequest]):
+    @overload
+    async def invoice_create(self, create_invoice_request: InvoiceCreateSimpleRequest) -> InvoiceCreateResponse: ...
+
+    @overload
+    async def invoice_create(self, create_invoice_request: InvoiceCreateRequest) -> InvoiceCreateResponse: ...
+
+    async def invoice_create(
+        self, create_invoice_request: Union[InvoiceCreateRequest, InvoiceCreateSimpleRequest]
+    ) -> InvoiceCreateResponse:
         """Send invoice create request to Qpay."""
         response = await self._request(
             "POST",
@@ -373,3 +386,24 @@ class QPayClient:
 
         data = Ebarimt.model_validate(response.json())
         return data
+
+    async def subscription_get(self, subscription_id: str):
+        """Send get subscription request."""
+        response = await self._request(
+            "GET",
+            "/subscription/" + subscription_id,
+            headers=await self._headers(),
+        )
+
+        data = SubscriptionGetResponse.model_validate(response.json())
+        return data
+
+    async def subscription_cancel(self, subscription_id: str):
+        """Send cancel subscription request."""
+        response = await self._request(
+            "DELETE",
+            "/subscription/" + subscription_id,
+            headers=await self._headers(),
+        )
+
+        return response.status_code

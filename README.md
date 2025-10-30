@@ -10,24 +10,30 @@ Visit links:
 
 ## Features
 
-- Client manages the access & refresh tokens 🤖
-- Both sync and async/await support 🙈🙉
-- Pydantic data validation ✅
-- Retries for payment check 🔁
-- QPay error support 🔍
+- Client manages the access & refresh tokens
+- Both sync and async/await support
+- Pydantic data validation
+- Retries for payment check
+- Retries on server error >=500
+- Retries on network error
+- Clear QPay error code and details
 
 ## API coverage
 
-### Auth
+### Authentication
 
-- ✅ **token** - Used to get token
-- ✅ **refresh** - Used to refresh token
+QPay Client authenticates and manages access and refresh token for you.
+
+- ✅ **token**
+- ✅ **refresh**
 
 ### Invoice
 
-- ✅ **get**
-- ✅ **create**
-- ✅ **cancel**
+- ✅ **Get invoice**
+- ✅ **Create simple invoice**
+- ✅ **Create detailed invoice**
+- ✅ **Create subscription invoice**
+- ✅ **Cancel invoice**
 
 ### Payment
 
@@ -41,6 +47,11 @@ Visit links:
 
 - ✅ **get**
 - ✅ **create**
+
+### Subscription
+
+- ✅ **Get subscription**
+- ✅ **Cancel subscription**
 
 ## Installation
 

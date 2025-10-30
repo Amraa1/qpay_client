@@ -4,13 +4,27 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+from typing_extensions import Self
 
-from .enums import BankCode, Currency, EbarimtReceiverType, InvoiceStatus, ObjectType, PaymentStatus, TransactionType
+from .enums import (
+    BankCode,
+    Currency,
+    EbarimtReceiverType,
+    InvoiceStatus,
+    ObjectType,
+    PaymentStatus,
+    TaxCode,
+    TaxType,
+    TransactionType,
+)
+from .types import HttpUrlStr, SubscriptionIntervalType
 
 
 class TokenResponse(BaseModel):
     """QPay Token and Refresh token response."""
+
+    model_config = ConfigDict(validate_by_alias=True)
 
     token_type: str
     access_token: str
@@ -45,7 +59,7 @@ class SenderTerminalData(BaseModel):
 
 
 class InvoiceReceiverData(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(validate_by_alias=True)
 
     registration_number: Optional[str] = Field(default=None, alias="register", max_length=20)
     name: Optional[str] = Field(default=None, max_length=100)
@@ -55,7 +69,7 @@ class InvoiceReceiverData(BaseModel):
 
 
 class SenderBranchData(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(validate_by_alias=True)
 
     registration_number: Optional[str] = Field(default=None, alias="register", max_length=20)
     name: Optional[str] = Field(default=None, max_length=100)
@@ -79,7 +93,7 @@ class Surcharge(BaseModel):
 
 
 class Tax(BaseModel):
-    tax_code: Optional[str] = Field(default=None, max_length=20)
+    tax_code: Optional[TaxCode] = None
     description: Optional[str] = Field(default=None, max_length=100)
     amount: Decimal
     note: Optional[str] = Field(default=None, max_length=255)
@@ -126,9 +140,7 @@ class InvoiceCreateSimpleRequest(BaseModel):
     invoice_description: str = Field(max_length=255)
     sender_branch_code: Optional[str] = Field(default=None, max_length=45)
     amount: Decimal = Field(gt=0)
-    callback_url: str = Field(
-        max_length=255,
-    )
+    callback_url: HttpUrlStr
 
 
 class InvoiceCreateRequest(BaseModel):
@@ -137,9 +149,135 @@ class InvoiceCreateRequest(BaseModel):
     invoice_code: str = Field(examples=["TEST_INVOICE"], max_length=45)
     sender_invoice_no: str = Field(max_length=45)
     invoice_receiver_code: str = Field(max_length=45)
-    amount: Decimal
-    callback_url: str = Field(max_length=255)
+    invoice_description: str = Field(max_length=255)
+    callback_url: HttpUrlStr
 
+    amount: Optional[Decimal] = Field(default=None, gt=0)
+    sender_branch_code: Optional[str] = Field(default=None, max_length=45)
+    sender_branch_data: Optional[SenderBranchData] = None
+    sender_staff_code: Optional[str] = Field(default=None, max_length=100)
+    sender_staff_data: Optional[SenderStaffData] = None
+    sender_terminal_code: Optional[str] = Field(default=None, max_length=45)
+    sender_terminal_data: Optional[SenderTerminalData] = None
+    invoice_receiver_data: Optional[InvoiceReceiverData] = None
+    invoice_due_date: Optional[datetime] = None
+    enable_expiry: Optional[bool] = None
+    expiry_date: Optional[datetime] = None
+    calculate_vat: Optional[bool] = None
+    tax_type: Optional[TaxType] = None
+    tax_customer_code: Optional[str] = None
+    line_tax_code: Optional[str] = None
+    minimum_amount: Optional[Decimal] = None
+    maximum_amount: Optional[Decimal] = None
+    allow_partial: Optional[bool] = None
+    allow_exceed: Optional[bool] = None
+    allow_subscribe: Optional[bool] = None
+    subscription_interval: Optional[SubscriptionIntervalType] = None
+    subscription_webhook: Optional[HttpUrlStr] = None
+    note: Optional[str] = Field(default=None, max_length=1000)
+    lines: Optional[list[Line]] = None
+    transactions: Optional[list[Transaction]] = None
+
+    @model_validator(mode="after")
+    def check_amount_or_lines(self) -> Self:
+        if self.amount or self.lines:
+            return self
+        else:
+            raise ValueError("At least one of amount and lines must have valid value.")
+
+    @model_validator(mode="after")
+    def validate_when_subcription_allowed(self) -> Self:
+        if not self.allow_subscribe:
+            return self
+        elif not self.subscription_interval or not self.subscription_webhook:
+            raise ValueError(
+                "When allow_subscription is 'True', subscription_interval and subscription_webhook must have valid values."
+            )
+        elif not self.lines:
+            raise ValueError("When allow_subscription is 'True', lines must have atleast one value.")
+        else:
+            return self
+
+
+class Subscription(BaseModel):
+    id: str
+    is_active: bool
+    merchant_id: str
+    g_invoice_id: str
+    webhook: HttpUrlStr
+    start_date: datetime
+    interval: SubscriptionIntervalType
+    last_interval_date: datetime
+    created_date: datetime
+    created_by: str
+    updated_date: datetime
+    updated_by: str
+    status: bool
+    next_payment_date: Optional[datetime] = None
+    note: Optional[str] = None
+
+
+class QpayInvoiceLineBase(BaseModel):
+    id: str
+    g_merchant_id: str
+    invoice_id: str
+    invoice_line_id: str
+    description: str
+    amount: Decimal
+    note: Optional[str] = None
+    created_by: str
+    created_date: datetime
+    updated_by: str
+    updated_date: datetime
+    status: bool
+
+
+class InvoiceDiscount(QpayInvoiceLineBase):
+    discount_code: Optional[str] = None
+
+
+class InvoiceTax(QpayInvoiceLineBase):
+    tax_code: Optional[TaxCode] = None
+    city_tax: Decimal
+
+
+class InvoiceSurcharge(QpayInvoiceLineBase):
+    surcharge_code: Optional[str] = None
+
+
+class InvoiceLine(BaseModel):
+    id: str
+    g_merchant_id: str
+    invoice_id: str
+    customer_product_code: Optional[str] = None
+    tax_product_code: Optional[str] = None
+    barcode: Optional[str] = None
+    classification_code: Optional[str] = None
+    line_description: Optional[str] = None
+    line_quantity: Decimal
+    line_unit_price: Decimal
+    note: Optional[str] = None
+    created_by: str
+    created_date: datetime
+    updated_by: str
+    updated_date: datetime
+    status: bool
+    invoice_discounts: list[InvoiceDiscount]
+    invoice_taxes: list[InvoiceTax]
+    invoice_surcharges: list[InvoiceSurcharge]
+
+
+class SubscriptionInvoice(BaseModel):
+    id: str
+    legacy_id: str
+    g_merchant_id: str
+    object_type: ObjectType
+    object_id: str
+    qr_linked: bool
+    qr_code: str
+    sender_invoice_no: str
+    sender_name: str
+    sender_logo: Optional[str] = None
     sender_branch_code: Optional[str] = Field(default=None, max_length=45)
     sender_branch_data: Optional[SenderBranchData] = None
     sender_staff_code: Optional[str] = Field(default=None, max_length=100)
@@ -152,22 +290,92 @@ class InvoiceCreateRequest(BaseModel):
     enable_expiry: Optional[bool] = None
     expiry_date: Optional[datetime] = None
     calculate_vat: Optional[bool] = None
-    tax_type: Optional[str] = None
+    tax_type: Optional[TaxType] = None
     tax_customer_code: Optional[str] = None
     line_tax_code: Optional[str] = None
     minimum_amount: Optional[Decimal] = None
     maximum_amount: Optional[Decimal] = None
-    allow_partial: Optional[bool] = None
-    allow_exceed: Optional[bool] = None
-    allow_subscribe: Optional[bool] = None
-    subscription_interval: Optional[str] = None
-    subscription_webhook: Optional[str] = None
-    note: Optional[str] = Field(default=None, max_length=1000)
-    lines: Optional[list[Line]] = None
-    transactions: Optional[list[Transaction]] = None
+    receiver_code: str
+    receiver_date: Optional[InvoiceReceiverData] = None
+    invoice_no: str
+    invoice_date: date
+    invoice_due_date: Optional[datetime] = None
+    invoice_name: Optional[str] = None
+    invoice_currency: Currency
+    invoice_status: InvoiceStatus
+    invoice_status_date: datetime
+    has_ebarimt: bool
+    has_vat: bool
+    ebarimt_by: Optional[str] = None
+    ebarimt_customer_code: Optional[str] = None
+    is_debt: bool
+    allow_partial: bool
+    invoice_amount: Decimal
+    invoice_total_discount: Decimal
+    invoice_total_surcharge: Decimal
+    invoice_gross_amount: Decimal
+    invoice_total_tax: Decimal
+    allow_card_trx: bool
+    g_card_terminal_id: str
+    allow_p2p_trx: bool
+    g_p2p_terminal_id: str
+    has_inform: bool
+    inform_id: str
+    has_check: bool
+    check_api: str
+    callback_url: HttpUrlStr
+    has_transaction: bool
+    has_service_fee: bool
+    service_fee_method: Optional[str] = None
+    service_fee_calc_type: Optional[str] = None
+    service_fee_onus: Optional[str] = None
+    service_fee_offus: Optional[str] = None
+    with_tag: bool
+    tag: Optional[str] = None
+    short_url: Optional[str] = None
+    package_id: Optional[str] = None
+    sub_package_id: Optional[str] = None
+    note: Optional[str] = None
+    district_code: Optional[str] = None
+    extra: Optional[str] = None
+    created_by: str
+    created_date: datetime
+    updated_by: str
+    updated_date: datetime
+    status: bool
+    invoice_lines: list[InvoiceLine]
+    invoice_transactions: list
+    invoice_inputs: list
+    total_amount: Decimal
+    gross_amount: Decimal
+    tax_amount: Decimal
+    surcharge_amount: Decimal
+    discount_amount: Decimal
+    qp_micro_cache_exp_minute: int
+
+
+class SubscriptionGetResponse(Subscription):
+    id: str
+    is_active: bool
+    merchant_id: str
+    g_invoice_id: str
+    webhook: HttpUrlStr
+    next_payment_date: Optional[datetime] = None
+    start_date: datetime
+    last_interval_date: datetime
+    interval: SubscriptionIntervalType
+    note: Optional[str] = None
+    created_by: str
+    created_date: datetime
+    updated_by: str
+    updated_date: datetime
+    status: bool
+    invoices: list[SubscriptionInvoice]
+    payments: list
 
 
 class InvoiceCreateResponse(BaseModel):
+    subscription: Optional[Subscription] = None
     invoice_id: str
     qr_text: str
     qr_image: str
@@ -267,7 +475,7 @@ class PaymentCheckRequest(BaseModel):
 
 
 class CancelPaymentRequest(Payment):
-    callback_url: str
+    callback_url: HttpUrlStr
     note: str
 
 
@@ -275,7 +483,7 @@ class EbarimtCreateRequest(BaseModel):
     payment_id: str
     ebarimt_receiver_type: EbarimtReceiverType
     ebarimt_receiver: Optional[str] = None
-    callback_url: Optional[str] = None
+    callback_url: Optional[HttpUrlStr] = None
 
 
 class Ebarimt(BaseModel):
@@ -334,7 +542,7 @@ class PaymentListResponse(BaseModel):
 
 
 class PaymentCancelRequest(BaseModel):
-    callback_url: Optional[str] = None
+    callback_url: Optional[HttpUrlStr] = None
     note: Optional[str] = None
 
 
@@ -360,7 +568,7 @@ class InvoiceGetResponse(BaseModel):
     gross_amount: Decimal
     tax_amount: Decimal
     surcharge_amount: Decimal
-    callback_url: str
+    callback_url: HttpUrlStr
     note: Optional[str] = None
     lines: Optional[list[Line]] = None
     transactions: Optional[list[Transaction]] = None
