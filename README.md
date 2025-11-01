@@ -1,6 +1,7 @@
 # QPay API Integration client
 
 ![Tests](https://github.com/Amraa1/qpay_client/actions/workflows/test.yml/badge.svg)
+[![codecov](https://codecov.io/github/Amraa1/qpay_client/graph/badge.svg?token=TIZAF2HOWT)](https://codecov.io/github/Amraa1/qpay_client)
 ![PyPI - Version](https://img.shields.io/pypi/v/qpay-client)
 ![Python](https://img.shields.io/pypi/pyversions/qpay-client.svg)
 ![PyPI - License](https://img.shields.io/pypi/l/qpay-client)
