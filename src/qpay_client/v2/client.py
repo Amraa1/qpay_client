@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from random import random
+import random
 from typing import Optional, Union, overload
 
 from httpx import AsyncClient, BasicAuth, Headers, Response, Timeout
@@ -149,7 +149,7 @@ class QPayClient:
                 self._logger.warning(
                     f"Retrying {method}: {url} (attempt {attempt}/{retries} after {delay:.2f})",
                 )
-                await asyncio.sleep(delay ** (attempt - 1) + random() * jitter)
+                await asyncio.sleep(delay ** (attempt - 1) + random.random() * jitter)
                 response = await self._client.request(method, url, **kwargs)
                 if response.is_success:
                     break
@@ -308,7 +308,7 @@ class QPayClient:
             self._logger.warning(
                 f"Retrying POST: /payment/check (attempt {attempt}/{payment_retries} after {delay:.2f})"
             )
-            await asyncio.sleep(delay ** (attempt - 1) + random() * jitter)
+            await asyncio.sleep(delay ** (attempt - 1) + random.random() * jitter)
 
             response = await self._request(
                 "POST",

@@ -1,6 +1,6 @@
 import logging
+import random
 import time
-from random import random
 from typing import Optional, Union
 
 from httpx import BasicAuth, Client, Response, Timeout
@@ -136,7 +136,7 @@ class QPayClientSync:
                 self._logger.warning(
                     f"Retrying {method}: {url} (attempt {attempt}/{retries} after {delay:.2f})",
                 )
-                time.sleep(delay ** (attempt - 1) + random() * jitter)
+                time.sleep(delay ** (attempt - 1) + random.random() * jitter)
 
                 response = self._client.request(method, url, **kwargs)
 
@@ -267,7 +267,7 @@ class QPayClientSync:
             self._logger.warning(
                 f"Retrying POST: /payment/check (attempt {attempt}/{payment_retries} after {delay:.2f})"
             )
-            time.sleep(delay ** (attempt - 1) + random() * jitter)
+            time.sleep(delay ** (attempt - 1) + random.random() * jitter)
 
             response = self._request(
                 "POST",
