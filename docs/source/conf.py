@@ -18,7 +18,6 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",  # Google/NumPy docstrings
     "sphinx.ext.viewcode",
-    "myst_parser",  # enable Markdown
 ]
 
 templates_path = ["_templates"]

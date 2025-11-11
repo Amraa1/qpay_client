@@ -13,7 +13,7 @@ QPay API integration made simpler and safer with data validation and auto token 
 This python package includes async and sync client. You can choose which ever suits your project.
 
 Visit links:  
-[Package document](https://pypi.org/project/qpay-client/)  
+[Package document](https://qpay-client.readthedocs.io/mn/latest/)  
 [QPay document](https://developer.qpay.mn)
 
 ## Features
