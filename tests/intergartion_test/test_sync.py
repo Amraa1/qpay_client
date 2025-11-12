@@ -8,9 +8,8 @@ import pytest
 
 # ---- imports from your package; adjust path if needed
 from qpay_client.v2 import QPayClientSync, QPayError, QPaySettings
-from qpay_client.v2.enums import EbarimtReceiverType, ObjectType
+from qpay_client.v2.enums import ObjectType
 from qpay_client.v2.schemas import (
-    EbarimtCreateRequest,
     InvoiceCreateSimpleRequest,
     Offset,
     PaymentCheckRequest,
@@ -28,9 +27,6 @@ skip_live = pytest.mark.skipif(not RUN_LIVE, reason="Set QPAY_RUN_LIVE_TESTS=1 t
 SANDBOX_USERNAME = os.environ.get("QPAY_USERNAME", "TEST_MERCHANT")
 SANDBOX_PASSWORD = os.environ.get("QPAY_PASSWORD", "123456")
 SANDBOX_INVOICE_CODE = os.environ.get("QPAY_INVOICE_CODE", "TEST_INVOICE")
-
-# If you have a known PAID payment_id in sandbox, set it to exercise ebarimt_create:
-PAID_PAYMENT_ID = ""
 
 
 def _unique_sender_invoice_no() -> str:
@@ -160,16 +156,3 @@ def test_payment_cancel_and_refund_raise_for_invalid_payment_id_live():
 # -------------------------------------------------------------------
 # Ebarimt (optional) — requires a PAID payment_id
 # -------------------------------------------------------------------
-
-
-@skip_live
-@pytest.mark.skipif(not PAID_PAYMENT_ID, reason="Set QPAY_PAID_PAYMENT_ID to a PAID payment_id to run this test.")
-def test_ebarimt_create_for_paid_payment_live():
-    c = _client()
-    created = c.ebarimt_create(
-        EbarimtCreateRequest(
-            payment_id=PAID_PAYMENT_ID, ebarimt_receiver_type=EbarimtReceiverType.citizen, ebarimt_receiver="99119911"
-        )
-    )
-    # Should return an EbarimtCreateResponse on success
-    assert created.id and created.object_type == ObjectType.invoice
