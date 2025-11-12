@@ -1,7 +1,7 @@
 # QPay API Integration client
 
 ![Tests](https://github.com/Amraa1/qpay_client/actions/workflows/test.yml/badge.svg)
-[![codecov](https://codecov.io/github/Amraa1/qpay_client/graph/badge.svg?token=TIZAF2HOWT)](https://codecov.io/github/Amraa1/qpay_client)
+![codecov](https://codecov.io/github/Amraa1/qpay_client/graph/badge.svg?token=TIZAF2HOWT)
 ![PyPI - Version](https://img.shields.io/pypi/v/qpay-client)
 ![Python](https://img.shields.io/pypi/pyversions/qpay-client.svg)
 ![PyPI - License](https://img.shields.io/pypi/l/qpay-client)
@@ -18,19 +18,20 @@ Visit links:
 
 ## Features
 
-- Client manages the access & refresh tokens
-- Both sync and async/await support
-- Pydantic data validation
-- Retries for payment check
-- Retries on server error >=500
-- Retries on network error
-- Clear QPay error code and details
+- Client manages the access & refresh tokens.
+- Both sync and async/await support.
+- Data validation with Pydantic.
+- Retries on payment check failures.
+- Retries on server error >=500.
+- Retries on network error.
+- Clear QPay error code and with details.
+- QPay Client settings with .env support.
 
 ## API coverage
 
-### Authentication
+All QPay APIs on their official document is supported.
 
-QPay Client authenticates and manages access and refresh token for you.
+### Authentication
 
 - ✅ **token**
 - ✅ **refresh**
@@ -100,21 +101,23 @@ You don't have to worry about authentication and managing tokens. QPay client ma
 You can use any web framework. I am using [Fastapi](https://fastapi.tiangolo.com/) for the example just to create a simple callback API.
 
 ```python
+
 import asyncio
 from decimal import Decimal
 
 from fastapi import FastAPI, status
 
-from qpay_client.v2 import QPayClient
-from qpay_client.v2.enums import ObjectTypeNum
-from qpay_client.v2.schemas import InvoiceCreateSimpleRequest, PaymentCheckRequest
+from qpay_client.v2 import QPayClient, QPaySettings
+from qpay_client.v2.enums import ObjectType
+from qpay_client.v2.schemas import InvoiceCreateSimpleRequest, Offset, PaymentCheckRequest
 
-client = QPayClient(
-    username="TEST_MERCHANT",  # or use your username
-    password="123456",  # or use your password
-    is_sandbox=True,  # or false for production
-)
+# Qpay client settings
+settings = QPaySettings()
 
+# Init async client
+client = QPayClient(settings=settings)
+
+# init FastAPI app
 app = FastAPI()
 
 # Just a dummy db
@@ -156,8 +159,7 @@ async def qpay_callback(payment_id: str):
     invoice_id = str(data["invoice_id"])
     response = await client.payment_check(
         PaymentCheckRequest(
-            object_type=ObjectTypeNum.invoice,
-            object_id=invoice_id,
+            object_type=ObjectType.invoice, object_id=invoice_id, offset=Offset(page_number=1, page_limit=100)
         )
     )
 
@@ -169,9 +171,15 @@ async def qpay_callback(payment_id: str):
     return "SUCCESS"
 
 
-asyncio.run(create_invoice())
+if __name__ == "__main__":
+    asyncio.run(create_invoice())
+
 
 ```
+
+Run with fastapi.
+
+`fastapi dev main.py`
 
 ### Sync client
 
@@ -184,46 +192,6 @@ client = QPayClientSync()
 
 ...
 ```
-
-### Run it
-
-`fastapi dev main.py`
-
-### Methods
-
-#### Invoice methods
-
-`invoice_create` Used to create QPay invoice.
-
-`invoice_cancel` Used to cancel a created invoice
-
-#### Payment methods
-
-`payment_get` Used to get payment details
-
-`payment_check` Used to check payment after the callback invocation
-
-`payment_cancel` Used to cancel payment (Use with caution ⚠️)
-
-`payment_refund` Used to refund the payment back to the user
-
-`payment_list` Used to list payments (e.g: for subscription 🔁)
-
-#### Ebarimt methods
-
-`ebarimt_create` Used to create Ebarimt (must be registered in Ebarimt platform first)
-
-`ebarimt_get` Used to get Ebarimt (must be registered in Ebarimt platform first)
-
-### Schemas
-
-Request/response payloads are strongly typed via Pydantic.
-See `qpay_client.v2.schemas` for models such as:
-
-- InvoiceCreateSimpleRequest
-- InvoiceCreateRequest
-- PaymentCheckRequest
-- EbarimtCreateRequest
 
 ## License
 

@@ -3,16 +3,17 @@ from decimal import Decimal
 
 from fastapi import FastAPI, status
 
-from qpay_client.v2 import QPayClient
+from qpay_client.v2 import QPayClient, QPaySettings
 from qpay_client.v2.enums import ObjectType
 from qpay_client.v2.schemas import InvoiceCreateSimpleRequest, Offset, PaymentCheckRequest
 
-client = QPayClient(
-    username="TEST_MERCHANT",  # or use your username
-    password="123456",  # or use your password
-    is_sandbox=True,  # or false for production
-)
+# Qpay client settings
+settings = QPaySettings()
 
+# Init async client
+client = QPayClient(settings=settings)
+
+# init FastAPI app
 app = FastAPI()
 
 # Just a dummy db

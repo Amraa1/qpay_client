@@ -27,20 +27,22 @@ Quickstart — Хурдан эхлэл
 
     from fastapi import FastAPI, status
 
-    from qpay_client.v2 import QPayClient
+    from qpay_client.v2 import QPayClient, QPaySettings
     from qpay_client.v2.enums import ObjectType
     from qpay_client.v2.schemas import InvoiceCreateSimpleRequest, Offset, PaymentCheckRequest
 
-    client = QPayClient(
-        username="TEST_MERCHANT",  # or use your username
-        password="123456",  # or use your password
-        is_sandbox=True,  # or false for production
-    )
+    # Qpay client settings
+    settings = QPaySettings()
 
+    # Init async client
+    client = QPayClient(settings=settings)
+
+    # init FastAPI app
     app = FastAPI()
 
     # Just a dummy db
     payment_database = {}
+
 
     async def create_invoice():
         response = await client.invoice_create(
@@ -65,6 +67,7 @@ Quickstart — Хурдан эхлэл
         # Showing QPay invoice to the user ...
         print(response.qPay_shortUrl)
 
+
     # You define the uri and query/param of your callback
     # Your callback API must return
     #   Response(status_code=200, body="SUCCESS")
@@ -87,8 +90,10 @@ Quickstart — Хурдан эхлэл
         # This is important !
         return "SUCCESS"
 
+
     if __name__ == "__main__":
         asyncio.run(create_invoice())
+
 
 Ажлуулах заавар
 ----------------
