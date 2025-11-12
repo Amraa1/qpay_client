@@ -95,6 +95,7 @@ def test_invoice_receiver_sender_branch_data_alias_register_and_nested_address()
     addr = Address(street="Peace Ave")
     recv = InvoiceReceiverData(register="1234567", name="Buyer", address=addr)
     assert recv.registration_number == "1234567"
+    assert recv.address is not None
     assert recv.address.street == "Peace Ave"
 
     br = SenderBranchData(register="9876543", email="branch@example.com", address=addr)
@@ -129,6 +130,7 @@ def test_discount_surcharge_tax_models_and_line_and_transaction_and_account():
     tr = Transaction(description="Split", amount=Decimal("17100"), accounts=[acc])
 
     assert ln.line_quantity == Decimal("2")
+    assert tr.accounts is not None
     assert tr.accounts[0].account_currency == Currency.mnt
 
 

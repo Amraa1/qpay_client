@@ -4,6 +4,8 @@ from enum import Enum
 
 @dataclass
 class QpayErrorDescription:
+    """English and Mongolian description of QPay error keys."""
+
     en: str
     mn: str
 

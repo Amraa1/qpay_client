@@ -2,10 +2,11 @@ import os
 import time
 import uuid
 from datetime import datetime, timedelta
+from decimal import Decimal
 
 import pytest
 
-from qpay_client.v2 import QPayClient, QPayError
+from qpay_client.v2 import QPayClient, QPayError, QPaySettings
 from qpay_client.v2.enums import ObjectType
 from qpay_client.v2.schemas import (
     InvoiceCreateSimpleRequest,
@@ -42,12 +43,12 @@ def _unique_sender_invoice_no() -> str:
 
 
 async def _new_client() -> QPayClient:
-    return QPayClient(
-        username=SANDBOX_USERNAME,
-        password=SANDBOX_PASSWORD,
-        is_sandbox=True,
-        # keep defaults for timeout/retry
+    # test client settings
+    settings = QPaySettings(
+        client_retries=0,
+        payment_check_retries=0,
     )
+    return QPayClient(settings=settings)
 
 
 # --- tests --------------------------------------------------------------------
@@ -90,7 +91,7 @@ async def test_invoice_lifecycle_create_get_cancel_payment_check_and_list():
         sender_invoice_no=_unique_sender_invoice_no(),
         invoice_receiver_code="terminal",
         invoice_description="integration-test",
-        amount=100,  # MNT
+        amount=Decimal(100),  # MNT
         callback_url="https://example.com/callback",
     )
     created = await client.invoice_create(req)
@@ -111,7 +112,7 @@ async def test_invoice_lifecycle_create_get_cancel_payment_check_and_list():
         object_id=invoice_id,
         offset=Offset(page_number=1, page_limit=10),
     )
-    check = await client.payment_check(check_req, payment_retries=0, delay=0.2, jitter=0.0)
+    check = await client.payment_check(check_req)
     assert hasattr(check, "count")
     assert check.count >= 0
     # If you manually pay this invoice in the sandbox, this test will still pass (count>0).

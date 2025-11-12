@@ -7,7 +7,7 @@ from decimal import Decimal
 import pytest
 
 # ---- imports from your package; adjust path if needed
-from qpay_client.v2 import QPayClientSync, QPayError
+from qpay_client.v2 import QPayClientSync, QPayError, QPaySettings
 from qpay_client.v2.enums import EbarimtReceiverType, ObjectType
 from qpay_client.v2.schemas import (
     EbarimtCreateRequest,
@@ -39,12 +39,12 @@ def _unique_sender_invoice_no() -> str:
 
 
 def _client() -> QPayClientSync:
-    return QPayClientSync(
-        username=SANDBOX_USERNAME,
-        password=SANDBOX_PASSWORD,
-        is_sandbox=True,
-        # keep default timeout/retry behavior
+    # test client settings
+    settings = QPaySettings(
+        client_retries=0,
+        payment_check_retries=0,
     )
+    return QPayClientSync(settings=settings)
 
 
 # -------------------------------------------------------------------
@@ -120,9 +120,6 @@ def test_payment_check_and_list_live():
             object_id=invoice_id,
             offset=Offset(page_number=1, page_limit=50),
         ),
-        payment_retries=2,  # poll a bit; usually 0 in sandbox
-        delay=0.2,
-        jitter=0.0,
     )
     assert hasattr(check, "count")
     assert check.count >= 0

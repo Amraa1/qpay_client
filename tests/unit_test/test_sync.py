@@ -442,7 +442,7 @@ def test_payment_check_polls_until_count_positive(Client):
         object_id="INV-1",
         offset=S.Offset(page_number=1, page_limit=10),
     )
-    out = c.payment_check(req, payment_retries=2, delay=0.01, jitter=0.0)
+    out = c.payment_check(req)
     assert out.count == 1
     assert len(out.rows) == 1
 

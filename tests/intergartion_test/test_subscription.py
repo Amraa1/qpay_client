@@ -10,7 +10,10 @@ from pydantic import ValidationError
 
 # ---- Project imports (adjust paths/namespaces to your package layout) ----
 # from qpay_client import QPayClient   # if your client is exported at package root
-from qpay_client.v2 import QPayClient  # fallback if you keep v2 structure
+from qpay_client.v2 import (
+    QPayClient,  # fallback if you keep v2 structure
+    QPaySettings,
+)
 from qpay_client.v2.schemas import (
     Address,
     InvoiceCreateRequest,
@@ -218,12 +221,12 @@ invoice_list = [
 
 
 async def _new_client() -> QPayClient:
-    return QPayClient(
-        username=SANDBOX_USERNAME,
-        password=SANDBOX_PASSWORD,
-        is_sandbox=True,
-        # keep defaults for timeout/retry
+    # test client settings
+    settings = QPaySettings(
+        client_retries=0,
+        payment_check_retries=0,
     )
+    return QPayClient(settings=settings)
 
 
 def _unique_suffix() -> str:
@@ -247,7 +250,7 @@ def _basic_lines():
         Line(
             line_description="Monthly Pro plan",
             line_quantity=1,
-            line_unit_price=1000,
+            line_unit_price=Decimal("1000"),
         ),
     ]
 

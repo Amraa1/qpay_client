@@ -25,10 +25,12 @@ Example:
 
 from .client import QPayClient
 from .error import QPayError
+from .settings import QPaySettings
 from .sync_client import QPayClientSync
 
 __all__ = [
     "QPayClient",
     "QPayClientSync",
     "QPayError",
+    "QPaySettings",
 ]

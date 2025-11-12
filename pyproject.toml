@@ -5,7 +5,11 @@ description = "QPay Integration made easy (async & sync, typed schemas, auto tok
 readme = "README.md"
 authors = [{ name = "Amraa1", email = "amarsanaaganbaatar0409@gmail.com" }]
 requires-python = ">=3.9"
-dependencies = ["httpx>=0.28.1", "pydantic>=2.10.0"]
+dependencies = [
+    "httpx>=0.28.1",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.11.0",
+]
 license = { file = "LICENSE.txt" }
 keywords = [
   "qpay",

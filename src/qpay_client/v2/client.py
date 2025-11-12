@@ -23,9 +23,8 @@ from .schemas import (
     SubscriptionGetResponse,
     TokenResponse,
 )
+from .settings import QPaySettings
 from .utils import handle_error
-
-logger = logging.getLogger("qpay")
 
 
 class QPayClient:
@@ -34,82 +33,41 @@ class QPayClient:
 
     This client handles authentication, token refresh, and provides async
     methods for interacting with QPay v2 endpoints (invoices, payments,
-    and ebarimt). It is designed to follow the official QPay v2
-    documentation.
-
-    Args:
-        username (str): Merchant username. Defaults to ``"TEST_MERCHANT"``.
-        password (str): Merchant password. Defaults to ``"123456"``.
-        is_sandbox (bool): Use sandbox environment if True (default).
-            Set to False for production.
-        timeout (httpx.Timeout): HTTP timeout configuration. Default`s to
-            5s connect, 10s read/write, 5s pool.
-        base_url (Literal["https://merchant-sandbox.qpay.mn/v2", "https://merchant.qpay.mn/v2"],
-            optional):
-            Override the default base URL if provided.
-        token_leeway (int): Seconds before expiry to refresh tokens.
-            Defaults to 60.
-        logger (logging.Logger): Logger instance. Defaults to module logger.
-
-    Authentication:
-        The client manages token acquisition and refresh automatically. You should not call ``_authenticate`` directly.
-
-    Example:
-        >>> from qpay_client.v2 import QPayClient
-        >>> client = QPayClient(username="YOUR_ID", password="YOUR_SECRET", is_sandbox=True)
-        >>> invoice = await client.invoice_create(request)
-
-    Available APIs:
-        - **Invoice**
-            - ``invoice_create``
-            - ``invoice_cancel``
-        - **Payment**
-            - ``payment_get``
-            - ``payment_check``
-            - ``payment_cancel``
-            - ``payment_refund``
-            - ``payment_list``
-        - **Ebarimt**
-            - ``ebarimt_create``
-            - ``ebarimt_get``
-
+    subscriptions, and ebarimt). It is designed to follow the official QPay v2.
     """
 
     def __init__(
         self,
-        username: str = "TEST_MERCHANT",
-        password: str = "123456",
         *,
-        is_sandbox: bool = True,
+        settings: Optional[QPaySettings] = None,
         timeout: Optional[Timeout] = None,
-        base_url: Optional[str] = None,
-        token_leeway: float = 60,
-        logger=logger,
-        log_level: int = logging.INFO,
+        logger: Optional[logging.Logger] = None,
+        log_level: Optional[Union[int, str]] = None,
     ):
-        # Basic Auth setup
-        self._auth_credentials = BasicAuth(
-            username=username,
-            password=password,
-        )
+        """
+        Initialize QPayClient object.
 
-        # base_url setup, base_url can also be automatically set from is_sandbox
-        if base_url:
-            # user supplied base_url
-            self._base_url = base_url
-        elif is_sandbox:
-            # dev environment
-            self._base_url = "https://merchant-sandbox.qpay.mn/v2"
-        else:
-            # prod environment
-            self._base_url = "https://merchant.qpay.mn/v2"
+        Args:
+            settings (Optional[Settings]): Optional Settings instance.
+            timeout (Optional[httpx.Timeout]): Optional HTTPX Timeout configuration
+                for requests.
+            logger (logging.Logger): Logger instance.
+            log_level (int): Logging level for the logger.
 
+        """
+        self._id = id(self)
         self._auth_state = QpayAuthState()
+        self._settings = settings or QPaySettings()
 
-        self._token_leeway = token_leeway
+        # If base_url is supplied use that else use settings
+        self._base_url = self._settings.base_url
 
-        self._logger = logger
-        self._logger.setLevel(log_level)
+        self._is_sandbox = self._settings.sandbox
+        self._token_leeway = self._settings.token_leeway
+
+        # Logging config
+        self._logger = logger or logging.getLogger(f"qpay.{self._id}")
+        self._logger.setLevel(log_level or logging.INFO)
 
         # Default timeout if timeout is None
         if timeout is None:
@@ -120,19 +78,16 @@ class QPayClient:
 
         self._async_lock = asyncio.Lock()
 
+        # Log client initialization in debug mode
         self._logger.debug(
             "QPayClient initialized",
-            extra={"base_url": self._base_url, "sandbox": is_sandbox},
+            extra={"base_url": self._base_url, "sandbox": self._is_sandbox, "leeway": self._token_leeway},
         )
 
     async def _request(
         self,
         method: str,
         url: str,
-        *,
-        retries: int = 5,
-        delay: float = 0.5,
-        jitter: float = 0.5,
         **kwargs,
     ) -> Response:
         """Send requests to qpay server."""
@@ -145,11 +100,13 @@ class QPayClient:
 
         elif response.is_server_error:
             # Retry for server errors
-            for attempt in range(1, retries + 1):
+            for attempt in range(1, self._settings.client_retries + 1):
                 self._logger.warning(
-                    f"Retrying {method}: {url} (attempt {attempt}/{retries} after {delay:.2f})",
+                    f"Retrying {method}: {url} (attempt {attempt}/{self._settings.client_retries} after {self._settings.client_delay:.2f})",
                 )
-                await asyncio.sleep(delay ** (attempt - 1) + random.random() * jitter)
+                await asyncio.sleep(
+                    self._settings.client_delay ** (attempt - 1) + random.random() * self._settings.client_jitter
+                )
                 response = await self._client.request(method, url, **kwargs)
                 if response.is_success:
                     break
@@ -166,7 +123,7 @@ class QPayClient:
                 "Accept": "application/json",
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {await self.get_token()}",
-                "User-Agent": "qpay-client/2.x",
+                "User-Agent": "qpay-client",
             }
         )
 
@@ -187,7 +144,10 @@ class QPayClient:
         response = await self._request(
             "POST",
             "/auth/token",
-            auth=self._auth_credentials,
+            auth=BasicAuth(
+                username=self._settings.username,
+                password=self._settings.password.get_secret_value(),  # get password secret
+            ),
         )
 
         token_response = TokenResponse.model_validate(response.json())
@@ -282,10 +242,6 @@ class QPayClient:
     async def payment_check(
         self,
         payment_check_request: PaymentCheckRequest,
-        *,
-        payment_retries: int = 5,
-        delay: float = 0.5,
-        jitter: float = 0.5,
     ):
         """
         Send check payment request to qpay.
@@ -304,11 +260,14 @@ class QPayClient:
         if data.count > 0:
             return data
 
-        for attempt in range(1, payment_retries + 1):
+        for attempt in range(1, self._settings.payment_check_retries + 1):
             self._logger.warning(
-                f"Retrying POST: /payment/check (attempt {attempt}/{payment_retries} after {delay:.2f})"
+                f"Retrying POST: /payment/check (attempt {attempt}/{self._settings.payment_check_retries} after {self._settings.payment_check_delay:.2f})"
             )
-            await asyncio.sleep(delay ** (attempt - 1) + random.random() * jitter)
+            await asyncio.sleep(
+                self._settings.payment_check_delay ** (attempt - 1)
+                + random.random() * self._settings.payment_check_jitter
+            )
 
             response = await self._request(
                 "POST",

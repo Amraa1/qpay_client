@@ -1,3 +1,5 @@
+"""QPay client authentication state module."""
+
 import time
 from dataclasses import dataclass
 
