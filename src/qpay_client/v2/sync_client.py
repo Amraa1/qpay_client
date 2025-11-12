@@ -128,7 +128,7 @@ class QPayClientSync:
         if not self.is_closed:
             self._client.close()
 
-    async def authenticate(self) -> None:
+    def authenticate(self) -> None:
         """Authenticate client."""
         if self.is_authenticated:
             return  # Fast exit
