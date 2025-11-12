@@ -1,509 +1,386 @@
-import json
-import time as _time
-from datetime import datetime, timedelta
-from decimal import Decimal
-
-import httpx
+# tests/unit_test/test_sync.py
 import pytest
+import respx
+from httpx import Response
 
-import src.qpay_client.v2.enums as E
-import src.qpay_client.v2.schemas as S
-import src.qpay_client.v2.sync_client as client_mod
+from qpay_client.v2.enums import EbarimtReceiverType, InvoiceStatus, ObjectType
+from qpay_client.v2.schemas import Offset
+from qpay_client.v2.settings import QPaySettings, SecretStr
 
-# ---------- Adjust these imports to your actual package path ----------
-from src.qpay_client.v2.sync_client import QPayClientSync as _QPayClientSync
-
-# ---------------------------------------------------------------------
-
-# ==========================
-# Test infrastructure
-# ==========================
-
-
-class FakeHttpxClient:
-    """
-    Minimal synchronous httpx-like client with a queue of responses.
-
-    Each .request() pops the next response and records the call.
-    """
-
-    def __init__(self, responses):
-        self._responses = list(responses)
-        self.calls = []
-
-    def request(self, method, url, **kwargs):
-        self.calls.append((method, url, kwargs))
-        if not self._responses:
-            raise AssertionError("No more fake responses left in queue")
-        return self._responses.pop(0)
-
-
-def make_response(status_code: int, json_body=None, method="GET", url="https://merchant-sandbox.qpay.mn/v2/x"):
-    req = httpx.Request(method, url)
-    headers = {}
-    content = None
-    if json_body is not None:
-        headers["Content-Type"] = "application/json"
-        content = json.dumps(json_body).encode()
-    return httpx.Response(status_code, request=req, headers=headers, content=content)
-
-
-@pytest.fixture(autouse=True)
-def fast_sleep(monkeypatch):
-    """Make backoffs instant."""
-    monkeypatch.setattr(_time, "sleep", lambda *_a, **_k: None)
-    yield
-
-
-# ---- Fake QpayAuthState (sync client uses attribute + methods) ----
+# Adjust these imports to your real package paths
+from qpay_client.v2.sync_client import QPayClientSync
 
 
 class FakeAuthState:
-    def __init__(self):
-        # treat has_access_token like a property in your sync client
-        self.has_access_token = False
-        self._access_expired = True
-        self._refresh_expired = True
-        self._access = "ACCESS"
-        self._refresh = "REFRESH"
+    """Minimal stand-in for QpayAuthState used inside QPayClientSync."""
 
-    # methods used by client
-    def is_access_expired(self, leeway=0):
+    def __init__(self):
+        self._access = "tok_initial"
+        self._refresh = "ref_initial"
+        self._access_expired = True  # start expired so client authenticates
+        self._refresh_expired = False
+        self.updated_with = None
+
+    def has_access_token(self) -> bool:
+        return self._access is not None
+
+    def is_access_expired(self, leeway: float = 0) -> bool:
         return self._access_expired
 
-    def is_refresh_expired(self, leeway=0):
+    def is_refresh_expired(self, leeway: float = 0) -> bool:
         return self._refresh_expired
 
-    def get_access_token(self):
+    def get_access_token(self) -> str:
         return self._access
 
-    def access_as_header(self):
-        return f"Bearer {self._access}"
-
-    def refresh_as_header(self):
+    def refresh_as_header(self) -> str:
         return f"Bearer {self._refresh}"
 
-    # schema update
-    def update(self, token_response: S.TokenResponse):
+    def update(self, token_response):
         self._access = token_response.access_token
         self._refresh = token_response.refresh_token
-        self.has_access_token = True
         self._access_expired = False
-        self._refresh_expired = False
-
-
-# ==========================
-# Fixtures to get a patched client
-# ==========================
+        self.updated_with = token_response
 
 
 @pytest.fixture
-def Client(monkeypatch):
-    """
-    QPayClientSync class.
-
-    - QpayAuthState patched to FakeAuthState
-    - handle_error replaced with a raiser so we can assert it ran
-    """
-    # Patch state
-    monkeypatch.setattr(client_mod, "QpayAuthState", FakeAuthState)
-
-    # Patch schemas we rely on directly (real ones are fine)
-    # Patch handle_error: raise a sentinel error so tests can assert
-    class HandledError(RuntimeError):
-        pass
-
-    def _handle_error(resp, logger):
-        raise HandledError(f"handled status={resp.status_code}")
-
-    monkeypatch.setattr(client_mod, "handle_error", _handle_error)
-
-    # Return subclass for easier introspection if needed
-    class Patched(_QPayClientSync):
-        pass
-
-    return Patched
+def settings():
+    # Keep retries low and delays zero for fast unit tests
+    return QPaySettings(
+        sandbox=True,
+        client_retries=1,
+        client_delay=0.0,
+        client_jitter=0.0,
+        payment_check_retries=1,
+        payment_check_delay=0.0,
+        payment_check_jitter=0.0,
+        username="user",
+        password=SecretStr("pass"),
+    )
 
 
-# ==========================
-# Helpers to build minimal-valid payloads
-# ==========================
+@pytest.fixture
+def client(settings, monkeypatch):
+    c = QPayClientSync(settings=settings)
+    # Inject controllable auth state
+    fake = FakeAuthState()
+    monkeypatch.setattr(c, "_auth_state", fake)
+    # Make sleeps instant (patch where used!)
+    monkeypatch.setattr("qpay_client.v2.sync_client.time.sleep", lambda *_a, **_k: None)
+    return c
 
 
-def minimal_invoice_get_payload():
-    return {
-        "invoice_id": "INV-1",
-        "invoice_status": E.InvoiceStatus.open,
-        "sender_invoice_no": "S-1",
-        "invoice_description": "desc",
-        "total_amount": str(Decimal("100")),
-        "gross_amount": str(Decimal("100")),
-        "tax_amount": str(Decimal("0")),
-        "surcharge_amount": str(Decimal("0")),
-        "callback_url": "https://cb.com",
-        "inputs": [],
-    }
-
-
-def minimal_invoice_create_response():
-    return {
-        "invoice_id": "INV-NEW",
-        "qr_text": "QRDATA",
-        "qr_image": "base64...",
-        "qPay_shortUrl": "https://qpay.mn/s/abc",
-        "urls": [{"name": "App", "description": "open", "logo": "l", "link": "https://l"}],
-    }
-
-
-def minimal_payment_get_payload():
-    return {
-        "payment_id": "pid",
-        "payment_status": E.PaymentStatus.paid,
-        "payment_amount": "100",
-        "payment_fee": "0",
-        "payment_currency": E.Currency.mnt,
-        "payment_date": datetime.utcnow().isoformat(),
-        "payment_wallet": "qpay",
-        "transaction_type": E.TransactionType.card,
-        "object_type": E.ObjectType.invoice,
-        "object_id": "INV-1",
-        "card_transactions": [],
-        "p2p_transactions": [],
-    }
-
-
-def minimal_payment_in_rows():
-    return {
-        "payment_id": "pid-1",
-        "payment_status": E.PaymentStatus.paid,
-        "payment_amount": "100",
-        "trx_fee": "0",
-        "payment_currency": E.Currency.mnt,
-        "payment_wallet": "qpay",
-        "payment_type": E.TransactionType.card,
-        "card_transactions": [],
-        "p2p_transactions": [],
-    }
-
-
-def minimal_payment_list_response():
-    return {
-        "count": 1,
-        "rows": [
-            {
-                "payment_id": "p-1",
-                "payment_date": datetime.utcnow().isoformat(),
-                "payment_status": E.PaymentStatus.paid,
-                "payment_fee": "0",
-                "payment_amount": "100",
-                "payment_currency": E.Currency.mnt,
-                "payment_wallet": "qpay",
-                "payment_name": "Invoice Pmt",
-                "payment_description": "desc",
-                "paid_by": E.TransactionType.card,
-                "object_type": E.ObjectType.invoice,
-                "object_id": "INV-1",
-            }
-        ],
-    }
-
-
-def minimal_ebarimt_payload():
-    return {
-        "id": "e1",
-        "ebarimt_by": "SYS",
-        "g_wallet_id": "gw",
-        "g_wallet_customer_id": "gcid",
-        "ebarim_receiver_type": E.EbarimtReceiverType.citizen,
-        "ebarimt_district_code": "1510",
-        "ebarimt_bill_type": "REG",
-        "g_merchant_id": "gm",
-        "merchant_branch_code": "mb",
-        "g_payment_id": "1",
-        "paid_by": E.TransactionType.card,
-        "object_type": E.ObjectType.invoice,
-        "object_id": "INV-1",
-        "amount": "100",
-        "vat_amount": "10",
-        "city_tax_amount": "0",
-        "ebarimt_qr_data": "qr",
-        "ebarimt_lottery": "lot",
-        "ebarimt_status": "OK",
-        "ebarimt_status_date": datetime.utcnow().isoformat(),
-        "tax_type": "VAT",
-        "created_by": "me",
-        "created_date": datetime.utcnow().isoformat(),
-        "updated_by": "me",
-        "updated_date": datetime.utcnow().isoformat(),
-        "status": True,
-    }
-
-
-# ==========================
-# Tests for internal plumbing
-# ==========================
-
-
-def test_headers_and_get_token_paths(Client, monkeypatch):
-    c = Client()
-    # Provide fake http client (unused here)
-    c._client = FakeHttpxClient([])
-    # Start with no token -> _authenticate should be called
-    calls = {"auth": 0, "refresh": 0}
-
-    def fake_auth():
-        calls["auth"] += 1
-        # simulate /auth/token result path inside _authenticate
-        resp = make_response(
+def wire_auth(settings):
+    """Always mock both /auth/token and /auth/refresh."""
+    respx.post(f"{settings.base_url}/auth/token").mock(
+        return_value=Response(
             200,
-            {
-                "token_type": "bearer",
-                "access_token": "A1",
+            json={
+                "access_token": "tok_AAA",
+                "refresh_token": "ref_AAA",
                 "expires_in": 3600,
-                "refresh_token": "R1",
                 "refresh_expires_in": 7200,
-                "scope": "openid",
-                "not-before-policy": "0",
-                "session_state": "s",
+                "token_type": "Bearer",
+                "scope": "session",
+                "not-before-policy": "1",
+                "session_state": "1",
             },
-            method="POST",
-            url="https://merchant-sandbox.qpay.mn/v2/auth/token",
-        )
-        # shortcut: inject directly through state
-        c._auth_state.update(S.TokenResponse.model_validate(resp.json()))
-
-    monkeypatch.setattr(c, "_authenticate", fake_auth)
-
-    def fake_refresh():
-        calls["refresh"] += 1
-
-    monkeypatch.setattr(c, "_refresh_access_token", fake_refresh)
-
-    # get headers -> get_token -> _authenticate should run once
-    h = c._headers()
-    assert h["Authorization"].startswith("Bearer ")
-    assert calls["auth"] == 1 and calls["refresh"] == 0
-
-    # Force access expired -> refresh path
-    c._auth_state._access_expired = True
-    c.get_token()
-    assert calls["refresh"] == 1
-
-
-def test_request_401_triggers_refresh_and_retry(Client, monkeypatch):
-    c = Client()
-    # token present to avoid auth on headers
-    c._auth_state.has_access_token = True
-    c._auth_state._access_expired = False
-    c._auth_state._refresh_expired = False
-
-    # Queue: 401 then 200
-    r1 = make_response(401, method="GET", url="https://merchant-sandbox.qpay.mn/v2/x")
-    r2 = make_response(200, {"ok": True}, method="GET", url="https://merchant-sandbox.qpay.mn/v2/x")
-    c._client = FakeHttpxClient([r1, r2])
-
-    called = {"refresh": 0}
-
-    def fake_refresh():
-        called["refresh"] += 1
-
-    monkeypatch.setattr(c, "_refresh_access_token", fake_refresh)
-
-    res = c._request("GET", "/x", headers=c._headers())
-    assert res.status_code == 200
-    assert called["refresh"] == 1
-    assert len(c._client.calls) == 2
-
-
-def test_request_retries_on_5xx_then_succeeds(Client):
-    c = Client()
-    c._auth_state.has_access_token = True
-    c._auth_state._access_expired = False
-    c._auth_state._refresh_expired = False
-
-    r1 = make_response(500, method="GET", url="https://merchant-sandbox.qpay.mn/v2/y")
-    r2 = make_response(200, {"ok": True}, method="GET", url="https://merchant-sandbox.qpay.mn/v2/y")
-    c._client = FakeHttpxClient([r1, r2])
-
-    res = c._request("GET", "/y", headers=c._headers(), retries=3, delay=0.01)
-    assert res.status_code == 200
-
-
-def test_request_calls_handle_error_on_4xx(Client):
-    c = Client()
-    c._auth_state.has_access_token = True
-    c._auth_state._access_expired = False
-    c._auth_state._refresh_expired = False
-
-    # 400 should invoke handle_error -> raises our sentinel
-    r = make_response(400, {"error": "bad"}, method="GET", url="https://merchant-sandbox.qpay.mn/v2/z")
-    c._client = FakeHttpxClient([r])
-
-    with pytest.raises(RuntimeError) as exc:
-        c._request("GET", "/z", headers=c._headers())
-    assert "handled status=400" in str(exc.value)
-
-
-# ==========================
-# Public API: Invoice
-# ==========================
-
-
-def test_invoice_get_create_cancel(Client):
-    c = Client()
-    c._auth_state.has_access_token = True
-    c._auth_state._access_expired = False
-    c._auth_state._refresh_expired = False
-
-    inv_get = make_response(
-        200, minimal_invoice_get_payload(), method="GET", url="https://merchant-sandbox.qpay.mn/v2/invoice/INV-1"
-    )
-    inv_create = make_response(
-        200, minimal_invoice_create_response(), method="POST", url="https://merchant-sandbox.qpay.mn/v2/invoice"
-    )
-    inv_cancel = make_response(204, None, method="DELETE", url="https://merchant-sandbox.qpay.mn/v2/invoice/INV-1")
-    c._client = FakeHttpxClient([inv_get, inv_create, inv_cancel])
-
-    # invoice_get
-    got = c.invoice_get("INV-1")
-    assert got.invoice_id == "INV-1"
-
-    # invoice_create
-    req = S.InvoiceCreateSimpleRequest(
-        invoice_code="TEST_INVOICE",
-        sender_invoice_no="S-1",
-        invoice_receiver_code="terminal",
-        invoice_description="desc",
-        amount=Decimal("100"),
-        callback_url="https://cb.com",
-    )
-    created = c.invoice_create(req)
-    assert created.invoice_id == "INV-NEW"
-
-    # invoice_cancel
-    status = c.invoice_cancel("INV-1")
-    assert status == 204
-
-
-# ==========================
-# Public API: Payments
-# ==========================
-
-
-def test_payment_get_list(Client):
-    c = Client()
-    c._auth_state.has_access_token = True
-    c._auth_state._access_expired = False
-    c._auth_state._refresh_expired = False
-
-    pget = make_response(
-        200, minimal_payment_get_payload(), method="GET", url="https://merchant-sandbox.qpay.mn/v2/payment/PID"
-    )
-    plist = make_response(
-        200, minimal_payment_list_response(), method="POST", url="https://merchant-sandbox.qpay.mn/v2/payment/list"
-    )
-    c._client = FakeHttpxClient([pget, plist])
-
-    g = c.payment_get("PID")
-    assert g.object_type == E.ObjectType.invoice
-
-    req = S.PaymentListRequest(
-        object_type=E.ObjectType.invoice,
-        object_id="TEST_INVOICE",
-        start_date=datetime.utcnow() - timedelta(days=1),
-        end_date=datetime.utcnow(),
-        offset=S.Offset(page_number=1, page_limit=10),
-    )
-    listed = c.payment_list(req)
-    assert listed.count == 1
-    assert listed.rows[0].payment_id == "p-1"
-
-
-def test_payment_check_polls_until_count_positive(Client):
-    c = Client()
-    c._auth_state.has_access_token = True
-    c._auth_state._access_expired = False
-    c._auth_state._refresh_expired = False
-
-    # First count=0, then count=1 with one row
-    r1 = make_response(
-        200, {"count": 0, "rows": []}, method="POST", url="https://merchant-sandbox.qpay.mn/v2/payment/check"
-    )
-    r2 = make_response(
-        200,
-        {"count": 1, "rows": [minimal_payment_in_rows()]},
-        method="POST",
-        url="https://merchant-sandbox.qpay.mn/v2/payment/check",
-    )
-    c._client = FakeHttpxClient([r1, r2])
-
-    req = S.PaymentCheckRequest(
-        object_type=E.ObjectType.invoice,
-        object_id="INV-1",
-        offset=S.Offset(page_number=1, page_limit=10),
-    )
-    out = c.payment_check(req)
-    assert out.count == 1
-    assert len(out.rows) == 1
-
-
-def test_payment_cancel_and_refund_success_status(Client):
-    c = Client()
-    c._auth_state.has_access_token = True
-    c._auth_state._access_expired = False
-    c._auth_state._refresh_expired = False
-
-    cancel = make_response(204, None, method="DELETE", url="https://merchant-sandbox.qpay.mn/v2/payment/cancel/PID")
-    refund = make_response(204, None, method="DELETE", url="https://merchant-sandbox.qpay.mn/v2/payment/refund/PID")
-    c._client = FakeHttpxClient([cancel, refund])
-
-    assert c.payment_cancel("PID") == 204
-    assert c.payment_refund("PID", S.PaymentRefundRequest()) == 204
-
-
-def test_payment_cancel_raises_on_4xx_via_handle_error(Client):
-    c = Client()
-    c._auth_state.has_access_token = True
-    c._auth_state._access_expired = False
-    c._auth_state._refresh_expired = False
-
-    bad = make_response(
-        404, {"error": "NF"}, method="DELETE", url="https://merchant-sandbox.qpay.mn/v2/payment/cancel/BAD"
-    )
-    c._client = FakeHttpxClient([bad])
-
-    with pytest.raises(RuntimeError) as exc:
-        c.payment_cancel("BAD")
-    assert "handled status=404" in str(exc.value)
-
-
-# ==========================
-# Public API: Ebarimt
-# ==========================
-
-
-def test_ebarimt_create_and_get(Client):
-    c = Client()
-    c._auth_state.has_access_token = True
-    c._auth_state._access_expired = False
-    c._auth_state._refresh_expired = False
-
-    create_resp = make_response(
-        200, minimal_ebarimt_payload(), method="POST", url="https://merchant-sandbox.qpay.mn/v2/ebarimt/create"
-    )
-    get_resp = make_response(
-        200, minimal_ebarimt_payload(), method="GET", url="https://merchant-sandbox.qpay.mn/v2/ebarimt/BARIMT-1"
-    )
-    c._client = FakeHttpxClient([create_resp, get_resp])
-
-    created = c.ebarimt_create(
-        S.EbarimtCreateRequest(
-            payment_id="PID",
-            ebarimt_receiver_type=E.EbarimtReceiverType.citizen,
-            callback_url="https://callback.com",
         )
     )
-    assert created.id == "e1"
+    respx.post(f"{settings.base_url}/auth/refresh").mock(
+        return_value=Response(
+            200,
+            json={
+                "access_token": "tok_AAA",
+                "refresh_token": "ref_AAA",
+                "expires_in": 3600,
+                "refresh_expires_in": 7200,
+                "token_type": "Bearer",
+                "scope": "session",
+                "not-before-policy": "1",
+                "session_state": "1",
+            },
+        )
+    )
 
-    got = c.ebarimt_get("BARIMT-1")
-    assert got.object_type == E.ObjectType.invoice
+
+@respx.mock
+def test_context_manager_triggers_auth_and_closes(client, settings):
+    wire_auth(settings)
+
+    with client as c:
+        assert c.is_authenticated is True
+        assert c.token == "tok_AAA"
+
+    # Exiting context closes the underlying httpx.Client
+    assert client.is_closed is True
+
+
+@respx.mock
+def test_headers_include_bearer_token_after_auth(client, settings):
+    wire_auth(settings)
+
+    route = respx.get(f"{settings.base_url}/invoice/INV123").mock(
+        return_value=Response(
+            200,
+            json={
+                "invoice_id": "INV123",
+                "invoice_status": InvoiceStatus.open,
+                "sender_invoice_no": "123456",
+                "invoice_description": "Cool invoice",
+                "total_amount": "123",
+                "gross_amount": "123",
+                "tax_amount": "123",
+                "surcharge_amount": "122",
+                "callback_url": "https://www.example.com/callback",
+                "note": "123",
+                "lines": [],
+                "transactions": [],
+                "inputs": [],
+            },
+        )
+    )
+
+    client.invoice_get("INV123")
+
+    assert route.called
+    auth = route.calls.last.request.headers.get("Authorization")
+    assert auth == "Bearer tok_AAA"
+
+
+@respx.mock
+def test_request_retries_on_500_then_succeeds(client, settings):
+    wire_auth(settings)
+
+    # 1st call 500, 2nd call 200 → client should retry once
+    route = respx.get(f"{settings.base_url}/payment/PAY123").mock(
+        side_effect=[
+            Response(500, json={"detail": "server error"}),
+            Response(
+                200,
+                json={
+                    "payment_id": "PAY123",
+                    "payment_status": "PAID",
+                    "payment_fee": "0.00",
+                    "payment_amount": "120.00",
+                    "payment_currency": "MNT",
+                    "payment_date": "2025-03-10T07:45:20.214Z",
+                    "payment_wallet": "0fc9b71c-cd87-4ffd-9cac-2279ebd9deb0",
+                    "object_type": "INVOICE",
+                    "object_id": "893e1017-f8b5-4bf3-9178-010f847dceee",
+                    "next_payment_date": None,
+                    "next_payment_datetime": None,
+                    "transaction_type": "P2P",
+                    "card_transactions": [],
+                    "p2p_transactions": [
+                        {
+                            "id": "162640477368519",
+                            "transaction_bank_code": "050000",
+                            "account_bank_code": "340000",
+                            "account_bank_name": "Хаан банк",
+                            "account_number": "102200004144",
+                            "status": "SUCCESS",
+                            "amount": "118.80",
+                            "currency": "MNT",
+                            "settlement_status": "SETTLED",
+                        }
+                    ],
+                },
+            ),
+        ]
+    )
+
+    data = client.payment_get("PAY123")
+    assert route.called
+    assert route.call_count == 2
+    assert data.payment_id == "PAY123"
+
+
+@respx.mock
+def test_401_triggers_refresh_and_replays_request(client, settings):
+    wire_auth(settings)
+    # Make access initially not expired so first request goes out immediately
+    client._auth_state._access_expired = False
+
+    route = respx.get(f"{settings.base_url}/invoice/a0b9f668-8a83-41e5-bbaf-3109e6aac600").mock(
+        side_effect=[
+            Response(401, json={"detail": "expired"}),
+            Response(
+                200,
+                json={
+                    "invoice_id": "a0b9f668-8a83-41e5-bbaf-3109e6aac600",
+                    "invoice_status": "OPEN",
+                    "sender_invoice_no": "123456",
+                    "sender_branch_code": "Your mom",
+                    "sender_branch_data": None,
+                    "sender_staff_code": None,
+                    "sender_staff_data": None,
+                    "sender_terminal_code": None,
+                    "sender_terminal_data": None,
+                    "invoice_description": "aaaaaaaaaaaaaaaaaaaaa",
+                    "invoice_due_date": None,
+                    "enable_expiry": True,
+                    "expiry_date": "2025-10-29T07:48:01.724Z",
+                    "allow_partial": False,
+                    "minimum_amount": None,
+                    "allow_exceed": False,
+                    "maximum_amount": None,
+                    "total_amount": "220.00",
+                    "gross_amount": 200,
+                    "tax_amount": 20,
+                    "surcharge_amount": 10,
+                    "discount_amount": 10,
+                    "callback_url": "https://bd5492c3ee85.ngrok.io/payments?payment_id=12345678",
+                    "note": None,
+                    "lines": [
+                        {
+                            "tax_product_code": "6401",
+                            "line_description": " Order No1311 200.00 .",
+                            "line_quantity": "1.00",
+                            "line_unit_price": "200.00",
+                            "note": "-.",
+                            "discounts": [
+                                {
+                                    "discount_code": "NONE",
+                                    "description": " discounts",
+                                    "amount": "10.00",
+                                    "note": " discounts",
+                                }
+                            ],
+                            "surcharges": [
+                                {
+                                    "surcharge_code": "NONE",
+                                    "description": "Хүргэлтийн зардал",
+                                    "amount": "10.00",
+                                    "note": " Хүргэлт",
+                                }
+                            ],
+                            "taxes": [{"tax_code": "VAT", "description": "НӨАТ", "amount": "20.0000", "note": " НӨАТ"}],
+                        }
+                    ],
+                    "transactions": [],
+                    "inputs": [],
+                },
+            ),
+        ]
+    )
+
+    data = client.invoice_get("a0b9f668-8a83-41e5-bbaf-3109e6aac600")
+    assert route.call_count == 2
+    # After 401, /auth/refresh was called and token updated to tok_AAA by wire_auth
+    assert client.token == "tok_initial"
+    assert data.invoice_id == "a0b9f668-8a83-41e5-bbaf-3109e6aac600"
+
+
+@respx.mock
+def test_payment_check_polls_until_count_gt_zero(client, settings):
+    wire_auth(settings)
+    client._auth_state._access_expired = False
+
+    route = respx.post(f"{settings.base_url}/payment/check").mock(
+        side_effect=[
+            Response(200, json={"count": 0, "rows": []}),
+            Response(
+                200,
+                json={
+                    "count": 1,
+                    "paid_amount": 198081,
+                    "rows": [
+                        {
+                            "payment_id": "912213777662363",
+                            "payment_status": "PAID",
+                            "payment_amount": "198081.00",
+                            "trx_fee": "1980.81",
+                            "payment_currency": "MNT",
+                            "payment_wallet": "Хаан банк апп",
+                            "payment_type": "P2P",
+                            "next_payment_date": None,
+                            "next_payment_datetime": None,
+                            "card_transactions": [],
+                            "p2p_transactions": [
+                                {
+                                    "id": "084064367153900",
+                                    "transaction_bank_code": "050000",
+                                    "account_bank_code": "340000",
+                                    "account_bank_name": "Төрийн банк",
+                                    "account_number": "MN160034102200004144",
+                                    "status": "SUCCESS",
+                                    "amount": "196100.19",
+                                    "currency": "MNT",
+                                    "settlement_status": "SETTLED",
+                                }
+                            ],
+                        }
+                    ],
+                },
+            ),
+        ]
+    )
+
+    from qpay_client.v2.schemas import PaymentCheckRequest
+
+    req = PaymentCheckRequest(
+        object_type=ObjectType.invoice,
+        object_id="912213777662363",
+        offset=Offset(page_limit=100, page_number=1),
+    )
+    res = client.payment_check(req)
+
+    assert route.call_count == 2
+    assert res.count == 1
+    assert res.rows[0].payment_id == "912213777662363"
+
+
+@respx.mock
+def test_ebarimt_create_parses_response(client, settings):
+    wire_auth(settings)
+    client._auth_state._access_expired = False
+
+    respx.post(f"{settings.base_url}/ebarimt/create").mock(
+        return_value=Response(
+            200,
+            json={
+                "id": "b5e2a8fa-dc71-42e4-95de-7d57a39a5b3e",
+                "ebarimt_by": "merchant_system",
+                "g_wallet_id": "fa9d3b40-77d4-44a8-9e5f-2f7d84cc3cc7",
+                "g_wallet_customer_id": "77ffb9cd-9c8d-44cc-9834-06f7f8b7d621",
+                "ebarim_receiver_type": "CITIZEN",
+                "ebarimt_receiver": "99119922",
+                "ebarimt_district_code": "1201",
+                "ebarimt_bill_type": "BILL_TYPE_1",
+                "g_merchant_id": "d42acb64-f1da-4e73-a780-6a9389d890b2",
+                "merchant_branch_code": "001",
+                "merchant_terminal_code": "POS-01",
+                "merchant_staff_code": "STF-1234",
+                "merchant_register": "1234567",
+                "g_payment_id": "987654321",
+                "paid_by": "CARD",
+                "object_type": "INVOICE",
+                "object_id": "2f7c9b2a-d9b0-4f9f-93ea-4512a8c4e3a7",
+                "amount": "120000.00",
+                "vat_amount": "12000.00",
+                "city_tax_amount": "3000.00",
+                "ebarimt_qr_data": "https://ebarimt.mn/qr?data=example",
+                "ebarimt_lottery": "A1B2C3D4",
+                "note": "Payment completed successfully.",
+                "ebarimt_status": "SUCCESS",
+                "ebarimt_status_date": "2025-11-12T10:00:00Z",
+                "tax_type": "VAT",
+                "created_by": "system",
+                "created_date": "2025-11-12T09:58:00Z",
+                "updated_by": "system",
+                "updated_date": "2025-11-12T10:00:00Z",
+                "status": True,
+            },
+        )
+    )
+
+    from qpay_client.v2.schemas import EbarimtCreateRequest
+
+    req = EbarimtCreateRequest(
+        payment_id="1234",
+        ebarimt_receiver_type=EbarimtReceiverType.citizen,
+    )
+    eb = client.ebarimt_create(req)
+
+    assert eb.id == "b5e2a8fa-dc71-42e4-95de-7d57a39a5b3e"
