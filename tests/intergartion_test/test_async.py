@@ -57,7 +57,7 @@ async def _new_client() -> QPayClient:
 @skip_live
 async def test_auth_token_obtained_from_sandbox():
     client = await _new_client()
-    token = await client.get_token()
+    token = await client._get_auth_token()
     assert isinstance(token, str)
     assert len(token) > 10  # a JWT-ish string
 
@@ -66,7 +66,7 @@ async def test_auth_token_obtained_from_sandbox():
 async def test_refresh_token_path_works():
     client = await _new_client()
     # Force an authenticate to ensure we have refresh token material
-    tok1 = await client.get_token()
+    tok1 = await client._get_auth_token()
     assert tok1
 
     # Force refresh path by marking access expired but refresh valid
@@ -74,7 +74,7 @@ async def test_refresh_token_path_works():
     client._auth_state.access_token_expiry = 0
 
     # This should call /auth/refresh under the hood and keep us authenticated
-    tok2 = await client.get_token()
+    tok2 = await client._get_auth_token()
     assert tok2
     # Tokens may or may not change; just ensure we remain authorized.
     assert isinstance(tok2, str)

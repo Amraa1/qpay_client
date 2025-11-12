@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import random
-from typing import Optional, Union, overload
+from typing import Optional, Union
 
 from httpx import AsyncClient, BasicAuth, Headers, Response, Timeout
 
@@ -78,11 +78,63 @@ class QPayClient:
 
         self._async_lock = asyncio.Lock()
 
-        # Log client initialization in debug mode
-        self._logger.debug(
-            "QPayClient initialized",
-            extra={"base_url": self._base_url, "sandbox": self._is_sandbox, "leeway": self._token_leeway},
-        )
+    @property
+    def is_authenticated(self) -> bool:
+        """Returns True of authenticated and not expired."""
+        return self._auth_state.has_access_token() and not self.is_access_expired
+
+    @property
+    def is_closed(self) -> bool:
+        """Returns True of connection is closed."""
+        return self._client.is_closed
+
+    @property
+    def is_access_expired(self) -> bool:
+        """Returns True if access token is expired."""
+        return self._auth_state.is_access_expired(leeway=self._token_leeway)
+
+    @property
+    def is_refresh_expired(self) -> bool:
+        """Returns True if refresh token is expired."""
+        return self._auth_state.is_refresh_expired(leeway=self._token_leeway)
+
+    @property
+    def is_sandbox(self) -> bool:
+        """Returns True if client is in sandbox mode."""
+        return self._is_sandbox
+
+    @property
+    def token(self) -> str:
+        """Get client token."""
+        return self._auth_state.get_access_token()
+
+    @property
+    def base_url(self) -> str:
+        """Get base url."""
+        return self._base_url
+
+    async def __aenter__(self):
+        # client authenticates early here if not authenticated
+        if not self.is_authenticated:
+            await self._authenticate()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.close()
+
+    async def close(self):
+        """Close connection."""
+        if not self.is_closed:
+            await self._client.aclose()
+
+    async def authenticate(self) -> None:
+        """Authenticate client."""
+        if self.is_authenticated:
+            return  # Fast exit
+        elif self.is_access_expired:
+            await self._refresh_access_token()
+        if self.is_refresh_expired:
+            await self._authenticate()
 
     async def _request(
         self,
@@ -122,7 +174,7 @@ class QPayClient:
             {
                 "Accept": "application/json",
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {await self.get_token()}",
+                "Authorization": f"Bearer {await self._get_auth_token()}",
                 "User-Agent": "qpay-client",
             }
         )
@@ -176,13 +228,10 @@ class QPayClient:
         else:
             await self._authenticate_nolock()
 
-    async def get_token(self) -> str:
-        """Get access token."""
-        if not self._auth_state.has_access_token() or self._auth_state.is_refresh_expired(leeway=self._token_leeway):
-            await self._authenticate()
-        elif self._auth_state.is_access_expired(leeway=self._token_leeway):
-            await self._refresh_access_token()
-        return self._auth_state.get_access_token()
+    async def _get_auth_token(self) -> str:
+        """Get authenticated access token."""
+        await self.authenticate()
+        return self.token
 
     async def invoice_get(self, invoice_id: str):
         """Get invoice by Id."""
@@ -194,12 +243,6 @@ class QPayClient:
 
         data = InvoiceGetResponse.model_validate(response.json())
         return data
-
-    @overload
-    async def invoice_create(self, create_invoice_request: InvoiceCreateSimpleRequest) -> InvoiceCreateResponse: ...
-
-    @overload
-    async def invoice_create(self, create_invoice_request: InvoiceCreateRequest) -> InvoiceCreateResponse: ...
 
     async def invoice_create(
         self, create_invoice_request: Union[InvoiceCreateRequest, InvoiceCreateSimpleRequest]

@@ -79,6 +79,64 @@ class QPayClientSync:
             extra={"base_url": self._base_url, "sandbox": self._is_sandbox, "leeway": self._token_leeway},
         )
 
+    @property
+    def is_authenticated(self) -> bool:
+        """Returns True of authenticated and not expired."""
+        return self._auth_state.has_access_token() and not self.is_access_expired
+
+    @property
+    def is_closed(self) -> bool:
+        """Returns True of connection is closed."""
+        return self._client.is_closed
+
+    @property
+    def is_access_expired(self) -> bool:
+        """Returns True if access token is expired."""
+        return self._auth_state.is_access_expired(leeway=self._token_leeway)
+
+    @property
+    def is_refresh_expired(self) -> bool:
+        """Returns True if refresh token is expired."""
+        return self._auth_state.is_refresh_expired(leeway=self._token_leeway)
+
+    @property
+    def is_sandbox(self) -> bool:
+        """Returns True if client is in sandbox mode."""
+        return self._is_sandbox
+
+    @property
+    def token(self) -> str:
+        """Get client token."""
+        return self._auth_state.get_access_token()
+
+    @property
+    def base_url(self) -> str:
+        """Get base url."""
+        return self._base_url
+
+    def __enter__(self):
+        # client authenticates early here if not authenticated
+        if not self.is_authenticated:
+            self._authenticate()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def close(self):
+        """Close connection."""
+        if not self.is_closed:
+            self._client.close()
+
+    async def authenticate(self) -> None:
+        """Authenticate client."""
+        if self.is_authenticated:
+            return  # Fast exit
+        elif self.is_access_expired:
+            self._refresh_access_token()
+        if self.is_refresh_expired:
+            self._authenticate()
+
     def _request(
         self,
         method: str,

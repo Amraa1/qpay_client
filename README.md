@@ -26,6 +26,9 @@ Visit links:
 - Retries on network error.
 - Clear QPay error code and with details.
 - QPay Client settings with .env support.
+- async with & with statement support.
+
+For more on `async with QPayClient() as client:` visit project documentation.
 
 ## API coverage
 
