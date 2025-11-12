@@ -1,5 +1,5 @@
 [pytest]
-markers = ["integration"]
 minversion = "9.0"
+markers = ["integration"]
 addopts = ["-ra", "-q"]
 testpaths = ["tests"]

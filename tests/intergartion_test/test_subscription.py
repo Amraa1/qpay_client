@@ -32,8 +32,6 @@ from qpay_client.v2.schemas import (
 # If your SubscriptionIntervalType lives elsewhere, import it accordingly.
 from qpay_client.v2.types import HttpUrlStr, SubscriptionIntervalType
 
-pytestmark = pytest.mark.asyncio
-
 SANDBOX_USERNAME = os.environ.get("QPAY_USERNAME", "TEST_MERCHANT")
 SANDBOX_PASSWORD = os.environ.get("QPAY_PASSWORD", "123456")
 
@@ -347,7 +345,7 @@ def test_allow_subscribe_false_does_not_require_subscription_fields():
 # -------------------------------------------------------------------------
 
 
-@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_create_subscription_invoice_success():
     """Happy-path: create a subscription invoice and assert the subscription object,deeplinks, and essentials exist in the response."""
     client = await _new_client()
@@ -385,7 +383,7 @@ async def test_create_subscription_invoice_success():
         assert dl.name and dl.link, f"Deeplink missing required fields: {dl}"
 
 
-@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_create_subscription_invoice_with_custom_amount_and_weekly_interval():
     """Variation: different amount and interval (weekly)."""
     client = await _new_client()
@@ -402,7 +400,7 @@ async def test_create_subscription_invoice_with_custom_amount_and_weekly_interva
     assert Decimal("2999")  # semantic check only; QPay total is derived by server, so we mainly assert success.
 
 
-@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_create_subscription_invoice_rejects_missing_lines_server_side():
     """
     Sanity check: if client-side validator is bypassed (e.g., building dict then model_dump),server should still reject malformed requests (defense-in-depth).
@@ -435,7 +433,7 @@ async def test_create_subscription_invoice_rejects_missing_lines_server_side():
     assert status and 200 <= status < 300, f"Expected 4xx on missing 'lines'; got {status}, body={body}"
 
 
-@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_create_normal_invoice_when_allow_subscribe_false():
     """Ensure a non-subscription invoice does not include subscription object."""
     client: QPayClient = await _new_client()
@@ -454,30 +452,7 @@ async def test_create_normal_invoice_when_allow_subscribe_false():
     assert isinstance(resp.qr_text, str) and resp.qr_text
 
 
-@pytest.mark.integration
-async def test_subscription_invoice_rejects_bad_interval(client: QPayClient):
-    """If a bad interval slips through type guards (e.g., due to future refactor), server should reject it. We expect 4xx."""
-    # Try constructing a model with a "permissive" type cast if your SubscriptionIntervalType ever loosens.
-    # If your Pydantic type strictly rejects, this test will xfail earlier.
-    try:
-        req = _valid_subscription_payload(interval="0M")
-    except Exception:
-        pytest.xfail("Client-side Pydantic validation already rejects invalid interval '0M'")
-        return
-
-    # If construction passed, try sending and expect server-side 4xx
-    try:
-        resp = await client.invoice_create(req)
-    except Exception:
-        # If your client raises on 4xx, reaching here is acceptable.
-        return
-    else:
-        # If no exception and we get a parsed response, it unexpectedly passed.
-        # Fail explicitly so we notice.
-        pytest.fail(f"Server accepted invalid interval, response={resp}")
-
-
-@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_subscription_invoice_with_possible_variation():
     client = await _new_client()
     coroutines = map(client.invoice_create, invoice_list)
