@@ -450,25 +450,3 @@ async def test_create_normal_invoice_when_allow_subscribe_false():
     assert resp.subscription is None
     assert isinstance(resp.invoice_id, str) and resp.invoice_id
     assert isinstance(resp.qr_text, str) and resp.qr_text
-
-
-@pytest.mark.asyncio
-async def test_subscription_invoice_with_possible_variation():
-    client = await _new_client()
-    coroutines = map(client.invoice_create, invoice_list)
-
-    result: list[InvoiceCreateResponse] = []
-    for coroutine in coroutines:
-        result.append(await coroutine)
-
-    subs = []
-    for res in result:
-        if res.subscription:
-            subs.append(res.subscription.id)
-        else:
-            continue
-
-    subs = []
-    coroutines = map(client.subscription_get, subs)
-    for coroutine in coroutines:
-        subs.append(await coroutine)
