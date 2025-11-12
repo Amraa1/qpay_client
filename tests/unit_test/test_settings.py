@@ -1,7 +1,4 @@
 import importlib
-import os
-
-import pytest
 
 from qpay_client.v2.settings import QPaySettings, SecretStr
 
