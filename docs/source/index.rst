@@ -30,5 +30,6 @@ QPay-ийн төлбөрийн системтэй интеграц хийхэд 
    quickstart
    examples
    api
+   sync_api
 
 
