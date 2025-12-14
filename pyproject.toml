@@ -1,14 +1,14 @@
 [project]
 name = "qpay-client"
-version = "0.4.2"
+version = "1.0.0"
 description = "QPay Integration made easy (async & sync, typed schemas, auto token refresh)"
 readme = "README.md"
 authors = [{ name = "Amraa1", email = "amarsanaaganbaatar0409@gmail.com" }]
 requires-python = ">=3.9"
 dependencies = [
-    "httpx>=0.28.1",
-    "pydantic>=2.10.0",
-    "pydantic-settings>=2.11.0",
+  "httpx>=0.28.1",
+  "pydantic>=2.10.0",
+  "pydantic-settings>=2.11.0",
 ]
 license = { file = "LICENSE.txt" }
 keywords = [
@@ -38,7 +38,7 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://pypi.org/project/qpay-client/"
-Documentation = "https://pypi.org/project/qpay-client/"
+Documentation = "https://qpay-client.readthedocs.io/mn/latest/"
 Source = "https://github.com/Amraa1/qpay_client"
 Issues = "https://github.com/Amraa1/qpay_client/issues"
 
@@ -61,7 +61,4 @@ dev = [
 ]
 
 [project.optional-dependencies]
-docs = [
-    "sphinx>=7.4.7",
-    "sphinx-rtd-theme>=3.0.2",
-]
+docs = ["sphinx>=7.4.7", "sphinx-rtd-theme>=3.0.2"]
