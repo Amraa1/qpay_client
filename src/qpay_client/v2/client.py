@@ -1,9 +1,8 @@
 import asyncio
 import logging
-import random
 from typing import Optional, Union
 
-from httpx import AsyncClient, BasicAuth, Headers, Response, Timeout
+from httpx import AsyncClient, BasicAuth, Headers, Limits, Response, Timeout
 
 from .auth import QpayAuthState
 from .schemas import (
@@ -24,7 +23,7 @@ from .schemas import (
     TokenResponse,
 )
 from .settings import QPaySettings
-from .utils import handle_error
+from .utils import exponential_backoff, handle_error
 
 
 class QPayClient:
@@ -39,8 +38,10 @@ class QPayClient:
     def __init__(
         self,
         *,
+        client: Optional[AsyncClient] = None,
         settings: Optional[QPaySettings] = None,
         timeout: Optional[Timeout] = None,
+        limits: Optional[Limits] = None,
         logger: Optional[logging.Logger] = None,
         log_level: Optional[Union[int, str]] = None,
     ):
@@ -48,9 +49,11 @@ class QPayClient:
         Initialize QPayClient object.
 
         Args:
+            client (Optional[httpx.AsyncClient]): Optional httpx async client.
             settings (Optional[Settings]): Optional Settings instance.
-            timeout (Optional[httpx.Timeout]): Optional HTTPX Timeout configuration
+            timeout (Optional[httpx.Timeout]): Optional httpx Timeout configuration
                 for requests.
+            limits: (Optional[httpx.Limits]): Optional limits set on client.
             logger (logging.Logger): Logger instance.
             log_level (int): Logging level for the logger.
 
@@ -73,10 +76,22 @@ class QPayClient:
         if timeout is None:
             timeout = Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0)
 
+        if limits is None:
+            # Set the same as httpx DEFAULT_LIMITS
+            limits = Limits(max_connections=100, max_keepalive_connections=20)
+
         # Async connections to qpay server
-        self._client = AsyncClient(base_url=self._base_url, timeout=timeout)
+        if client:
+            self._client = client
+        else:
+            self._client = AsyncClient(base_url=self._base_url, timeout=timeout, limits=limits)
 
         self._async_lock = asyncio.Lock()
+
+        self._logger.debug(
+            "QPayClient initialized",
+            extra={"base_url": self._base_url, "sandbox": self._is_sandbox, "leeway": self._token_leeway},
+        )
 
     @property
     def is_authenticated(self) -> bool:
@@ -113,6 +128,10 @@ class QPayClient:
         """Get base url."""
         return self._base_url
 
+    @property
+    def auth_state(self) -> QpayAuthState:
+        return self._auth_state
+
     async def __aenter__(self):
         # client authenticates early here if not authenticated
         if not self.is_authenticated:
@@ -130,11 +149,12 @@ class QPayClient:
     async def authenticate(self) -> None:
         """Authenticate client."""
         if self.is_authenticated:
-            return  # Fast exit
-        elif self.is_access_expired:
+            return  # no need to reauthenticate
+
+        if not self._auth_state.has_access_token() or self.is_refresh_expired:
+            await self._authenticate()  # first token or refresh token expired
+        else:
             await self._refresh_access_token()
-        if self.is_refresh_expired:
-            await self._authenticate()
 
     async def _request(
         self,
@@ -143,23 +163,44 @@ class QPayClient:
         **kwargs,
     ) -> Response:
         """Send requests to qpay server."""
+        self._logger.debug("Request: %s %s", method, url)
         response = await self._client.request(method, url, **kwargs)
+        self._logger.debug("Response: %s %s", response.status_code, url)
 
         if response.status_code == 401:
             # Fixable error
+            self._logger.info("401 received, refreshing access token")
             await self._refresh_access_token()
             response = await self._client.request(method, url, **kwargs)
+            self._logger.debug(
+                "Response after refresh: %s %s",
+                response.status_code,
+                url,
+            )
 
         elif response.is_server_error:
             # Retry for server errors
             for attempt in range(1, self._settings.client_retries + 1):
                 self._logger.warning(
-                    f"Retrying {method}: {url} (attempt {attempt}/{self._settings.client_retries} after {self._settings.client_delay:.2f})",
+                    "Retrying %s: %s (attempt %d/%d)",
+                    method,
+                    url,
+                    attempt,
+                    self._settings.client_retries,
                 )
+
+                # exponential backoff
                 await asyncio.sleep(
-                    self._settings.client_delay ** (attempt - 1) + random.random() * self._settings.client_jitter
+                    exponential_backoff(
+                        self._settings.client_delay,
+                        attempt,
+                        self._settings.client_jitter,
+                    )
                 )
+
                 response = await self._client.request(method, url, **kwargs)
+                self._logger.debug("Retry %s response: %s %s", attempt, response.status_code, url)
+
                 if response.is_success:
                     break
 
@@ -230,6 +271,8 @@ class QPayClient:
 
     async def _get_auth_token(self) -> str:
         """Get authenticated access token."""
+        if self.is_authenticated:
+            return self.token
         await self.authenticate()
         return self.token
 
@@ -305,11 +348,15 @@ class QPayClient:
 
         for attempt in range(1, self._settings.payment_check_retries + 1):
             self._logger.warning(
-                f"Retrying POST: /payment/check (attempt {attempt}/{self._settings.payment_check_retries} after {self._settings.payment_check_delay:.2f})"
+                "Retrying POST: /payment/check (attempt %d/%d)", attempt, self._settings.payment_check_retries
             )
+
             await asyncio.sleep(
-                self._settings.payment_check_delay ** (attempt - 1)
-                + random.random() * self._settings.payment_check_jitter
+                exponential_backoff(
+                    self._settings.payment_check_delay,
+                    attempt,
+                    self._settings.payment_check_jitter,
+                )
             )
 
             response = await self._request(
@@ -317,6 +364,12 @@ class QPayClient:
                 "/payment/check",
                 headers=await self._headers(),
                 json=payment_check_request.model_dump(by_alias=True, exclude_none=True, mode="json"),
+            )
+
+            self._logger.debug(
+                "Retry %s response: %s /payment/check",
+                attempt,
+                response.status_code,
             )
 
             data = PaymentCheckResponse.model_validate(response.json())

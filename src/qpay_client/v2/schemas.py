@@ -299,7 +299,6 @@ class SubscriptionInvoice(BaseModel):
     receiver_date: Optional[InvoiceReceiverData] = None
     invoice_no: str
     invoice_date: date
-    invoice_due_date: Optional[datetime] = None
     invoice_name: Optional[str] = None
     invoice_currency: Currency
     invoice_status: InvoiceStatus

@@ -1,4 +1,5 @@
 from logging import Logger
+from random import random
 
 from httpx import Response
 
@@ -18,3 +19,8 @@ def handle_error(response: Response, logger: Logger):
     error_data = safe_json(response)
     logger.error(f"QPayError {response.status_code} error: {error_data}")
     raise QPayError(status_code=response.status_code, error_key=error_data.get("message", ""))
+
+
+def exponential_backoff(base_delay: float, attempt: int, jitter: float) -> float:
+    """Returns delay for retry backoff."""
+    return base_delay * (2 ** (attempt - 1)) + random() * jitter

@@ -12,6 +12,7 @@ from qpay_client.v2.enums import ObjectType
 from qpay_client.v2.schemas import (
     InvoiceCreateSimpleRequest,
     Offset,
+    PaymentCancelRequest,
     PaymentCheckRequest,
     PaymentListRequest,
     PaymentRefundRequest,
@@ -145,7 +146,7 @@ def test_payment_cancel_and_refund_raise_for_invalid_payment_id_live():
     bogus_payment_id = "00000000-0000-0000-0000-000000000000"
 
     with pytest.raises(QPayError):
-        _ = c.payment_cancel(bogus_payment_id)
+        _ = c.payment_cancel(bogus_payment_id, PaymentCancelRequest(callback_url="https://example.com/callmesaul", note="demo"))
 
     with pytest.raises(QPayError):
         _ = c.payment_refund(

@@ -1,9 +1,8 @@
 import logging
-import random
 import time
 from typing import Optional, Union
 
-from httpx import BasicAuth, Client, Response, Timeout
+from httpx import BasicAuth, Client, Limits, Response, Timeout
 
 from .auth import QpayAuthState
 from .schemas import (
@@ -14,6 +13,7 @@ from .schemas import (
     InvoiceCreateResponse,
     InvoiceCreateSimpleRequest,
     InvoiceGetResponse,
+    PaymentCancelRequest,
     PaymentCheckRequest,
     PaymentCheckResponse,
     PaymentGetResponse,
@@ -24,7 +24,7 @@ from .schemas import (
     TokenResponse,
 )
 from .settings import QPaySettings
-from .utils import handle_error
+from .utils import exponential_backoff, handle_error
 
 
 class QPayClientSync:
@@ -34,13 +34,20 @@ class QPayClientSync:
     This client handles authentication, token refresh, and provides async
     methods for interacting with QPay v2 endpoints (invoices, payments,
     subscriptions, and ebarimt). It is designed to follow the official QPay v2.
+
+    Note:
+        QPayClientSync is not thread-safe.
+        Use one instance per thread or protect externally.
+
     """
 
     def __init__(
         self,
         *,
+        client: Optional[Client] = None,
         settings: Optional[QPaySettings] = None,
         timeout: Optional[Timeout] = None,
+        limits: Optional[Limits] = None,
         logger: Optional[logging.Logger] = None,
         log_level: Optional[Union[int, str]] = None,
     ):
@@ -48,9 +55,11 @@ class QPayClientSync:
         Initialize QPayClientSync object.
 
         Args:
+            client (Optional[httpx.Client]): Optional httpx client.
             settings (Optional[Settings]): Optional Settings instance.
             timeout (Optional[httpx.Timeout]): Optional HTTPX Timeout configuration
                 for requests.
+            limits (Optional[httpx.Limits]): Optional limits set on client.
             logger (logging.Logger): Logger instance.
             log_level (int): Logging level for the logger.
 
@@ -72,7 +81,13 @@ class QPayClientSync:
         if timeout is None:
             timeout = Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0)
 
-        self._client = Client(base_url=self._base_url, timeout=timeout)
+        if limits is None:
+            limits = Limits(max_connections=100, max_keepalive_connections=20)
+
+        if client:
+            self._client = client
+        else:
+            self._client = Client(base_url=self._base_url, timeout=timeout, limits=limits)
 
         self._logger.debug(
             "QPayClientSync initialized",
@@ -114,6 +129,10 @@ class QPayClientSync:
         """Get base url."""
         return self._base_url
 
+    @property
+    def auth_state(self) -> QpayAuthState:
+        return self._auth_state
+
     def __enter__(self):
         # client authenticates early here if not authenticated
         if not self.is_authenticated:
@@ -132,10 +151,10 @@ class QPayClientSync:
         """Authenticate client."""
         if self.is_authenticated:
             return  # Fast exit
-        elif self.is_access_expired:
-            self._refresh_access_token()
-        if self.is_refresh_expired:
+        if not self._auth_state.has_access_token() or self.is_refresh_expired:
             self._authenticate()
+        else:
+            self._refresh_access_token()
 
     def _request(
         self,
@@ -144,24 +163,42 @@ class QPayClientSync:
         **kwargs,
     ) -> Response:
         """Send requests to qpay server."""
+        self._logger.debug("Request: %s %s", method, url)
         response = self._client.request(method, url, **kwargs)
+        self._logger.debug("Response: %s %s", response.status_code, url)
 
         if response.status_code == 401:
             # Try to fix
+            self._logger.info("401 received, refreshing access token")
             self._refresh_access_token()
             response = self._client.request(method, url, **kwargs)
+            self._logger.debug(
+                "Response after refresh: %s %s",
+                response.status_code,
+                url,
+            )
 
         elif response.is_server_error:
             # Retry for server errors
             for attempt in range(1, self._settings.client_retries + 1):
                 self._logger.warning(
-                    f"Retrying {method}: {url} (attempt {attempt}/{self._settings.client_retries} after {self._settings.client_delay:.2f})",
+                    "Retrying %s %s (attempt %d/%d)",
+                    method,
+                    url,
+                    attempt,
+                    self._settings.client_retries,
                 )
+
                 time.sleep(
-                    self._settings.client_delay ** (attempt - 1) + random.random() * self._settings.client_jitter
+                    exponential_backoff(
+                        self._settings.client_delay,
+                        attempt,
+                        self._settings.client_jitter,
+                    )
                 )
 
                 response = self._client.request(method, url, **kwargs)
+                self._logger.debug("Retry %s response: %s %s", attempt, response.status_code, url)
 
                 if response.is_success:
                     break
@@ -175,8 +212,8 @@ class QPayClientSync:
         return {
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.get_token()}",
-            "User-Agent": "qpay-client/2.x",
+            "Authorization": f"Bearer {self._get_auth_token()}",
+            "User-Agent": "qpay-client",
         }
 
     def _authenticate(self):
@@ -221,12 +258,17 @@ class QPayClientSync:
         else:
             self._authenticate()
 
-    def get_token(self):
-        if not self._auth_state.has_access_token or self._auth_state.is_refresh_expired(self._token_leeway):
+    def get_token(self) -> str:
+        if not self._auth_state.has_access_token() or self._auth_state.is_refresh_expired(self._token_leeway):
             self._authenticate()
         elif self._auth_state.is_access_expired(self._token_leeway):
             self._refresh_access_token()
         return self._auth_state.get_access_token()
+
+    def _get_auth_token(self) -> str:
+        if self.is_authenticated:
+            return self.token
+        return self.get_token()
 
     def invoice_get(self, invoice_id: str):
         """Get invoice by Id."""
@@ -291,11 +333,15 @@ class QPayClientSync:
 
         for attempt in range(1, self._settings.payment_check_retries + 1):
             self._logger.warning(
-                f"Retrying POST: /payment/check (attempt {attempt}/{self._settings.payment_check_retries} after {self._settings.payment_check_delay:.2f})"
+                "Retrying POST: /payment/check (attempt %d/%d)", attempt, self._settings.payment_check_retries
             )
+
             time.sleep(
-                self._settings.payment_check_delay ** (attempt - 1)
-                + random.random() * self._settings.payment_check_jitter
+                exponential_backoff(
+                    self._settings.payment_check_delay,
+                    attempt,
+                    self._settings.payment_check_jitter,
+                )
             )
 
             response = self._request(
@@ -305,6 +351,12 @@ class QPayClientSync:
                 json=payment_check_request.model_dump(by_alias=True, exclude_none=True, mode="json"),
             )
 
+            self._logger.debug(
+                "Retry %s response: %s /payment/check",
+                attempt,
+                response.status_code,
+            )
+
             data = PaymentCheckResponse.model_validate(response.json())
 
             if data.count > 0:
@@ -312,11 +364,16 @@ class QPayClientSync:
 
         return data
 
-    def payment_cancel(self, payment_id: str):
+    def payment_cancel(
+        self,
+        payment_id: str,
+        payment_cancel_request: PaymentCancelRequest,
+    ):
         response = self._request(
             "DELETE",
             "/payment/cancel/" + payment_id,
             headers=self._headers(),
+            json=payment_cancel_request.model_dump(by_alias=True, exclude_none=True, mode="json"),
         )
 
         return response.status_code
@@ -353,8 +410,6 @@ class QPayClientSync:
             headers=self._headers(),
             json=ebarimt_create_request.model_dump(by_alias=True, exclude_none=True, mode="json"),
         )
-
-        print(response.status_code)
 
         data = EbarimtCreateResponse.model_validate(response.json())
         return data
