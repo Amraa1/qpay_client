@@ -3,8 +3,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from src.qpay_client.v2.error import QPayError
-from src.qpay_client.v2.utils import handle_error, safe_json
+from qpay_client.v2.error import QPayError
+from qpay_client.v2.utils import exponential_backoff, handle_error, safe_json
 
 
 class DummyResponse:
@@ -48,3 +48,12 @@ def test_handle_error_with_no_message(monkeypatch):
     logger.error.assert_called_once()
     assert exc.value.status_code == 404
     assert exc.value.error_key == ""
+
+
+def test_exponential_backoff():
+    base = 10
+    jitter = 0.5
+
+    for attempt in range(1, 6):
+        delay = exponential_backoff(base, attempt, jitter)
+        assert base * (2 ** (attempt - 1)) < delay < base * (2 ** (attempt - 1)) + jitter
