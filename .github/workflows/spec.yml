@@ -1,0 +1,26 @@
+name: Spec checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "spec/**"
+  push:
+    branches: [main]
+    paths:
+      - "spec/**"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+
+      - run: npm ci
+      - run: npm run spec:lint
+      - run: npm run spec:bundle

@@ -1,0 +1,6 @@
+apis:
+  qpay@v2:
+    root: spec/openapi.yaml
+
+extends:
+  - recommended

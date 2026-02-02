@@ -1,0 +1,2007 @@
+openapi: 3.1.0
+info:
+  title: QPay API
+  version: 1.0.0
+  description: Төлбөрийн картаар төлбөр хүлээн авах сервис
+servers:
+  - url: https://merchant.qpay.mn
+    description: Production
+  - url: https://merchant-sandbox.qpay.mn
+    description: Sandbox
+paths:
+  /v2/auth/token:
+    post:
+      summary: token
+      operationId: authToken
+      security:
+        - BasicAuth: []
+      parameters:
+        - name: Authorization
+          in: header
+          required: false
+          description: client_id, client_secret
+          schema: {}
+          example: Basic
+      responses:
+        "200":
+          description: token
+          headers:
+            Server:
+              schema:
+                type: string
+              example: nginx/1.28.0
+            Date:
+              schema:
+                type: string
+              example: Thu, 29 Jan 2026 07:02:05 GMT
+            Content-Length:
+              schema:
+                type: integer
+              example: 815
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              example: Content-Type, Authorization
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              example: undefined
+            Etag:
+              schema:
+                type: string
+              example: W/"32f-XhhslNZY7IK6NOM9CzTOeEROHpo"
+            Set-Cookie:
+              schema:
+                type: string
+              example: >-
+                qpay_merchant_openapi.sid=s%3AYXZe2kHjVevwRjTeMWiIbdcTXobRVZBK.oo%2BsaoxW4CtDRqfymH2KeNDdY6t8KjwLEtyBBX30RIw;
+                Path=/; Expires=Fri, 30 Jan 2026 07:02:05 GMT; HttpOnly
+            X-Powered-By:
+              schema:
+                type: string
+              example: Express
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains; preload
+            X-XSS-Protection:
+              schema:
+                type: string
+              example: 1; mode=block
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            Referrer-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: "default-src https: data: blob: 'unsafe-inline' 'unsafe-eval'"
+            Permissions-Policy:
+              schema:
+                type: string
+              example: >-
+                geolocation=();midi=();notifications=();push=();sync-xhr=();microphone=();camera=();magnetometer=();gyroscope=();speaker=(self);vibrate=();fullscreen=(self);payment=();
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthToken"
+              example:
+                token_type: bearer
+                refresh_expires_in: 1769756525
+                refresh_token: >-
+                  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijk5Y2ZiMWIyLTMyY2MtNGE0My05Y2NmLTY1Y2EzYmM5ODRhZiIsInNlc3Npb25fc2VjcmV0IjoiJDJiJDEwJElkeW16Y3JtbGlNRVRhY1ppNkxRZXU1QVZ3cGhEMFU2NGRQS2RwZFNqZXQ3MkljSU5lc3dhIiwiZXh0cmEiOnt9LCJpYXQiOjE3Njk2NzAxMjUsImV4cCI6MzUzOTQ0MTA1MH0.nhToVIW7fMWxzQ8Uf_TarFuGqkwmmW-FAusDi8KeA0s
+                access_token: >-
+                  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiI5OWNmYjFiMi0zMmNjLTRhNDMtOWNjZi02NWNhM2JjOTg0YWYiLCJtZXJjaGFudF9pZCI6IktLVFQiLCJ2MV9tZXJjaGFudF9mbGFnIjpmYWxzZSwic2Vzc2lvbl9pZCI6IllYWmUya0hqVmV2d1JqVGVNV2lJYmRjVFhvYlJWWkJLIiwiaWF0IjoxNzY5NjcwMTI1LCJleHAiOjM1Mzk0MjY2NTB9.iey9iy7JgyOi9X3RMi7fUes_O1DnpE86Q23bo3GynQI
+                expires_in: 1769756525
+                scope: get_token
+                not-before-policy: "0"
+                session_state: sandbox
+        "401":
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+          headers:
+            Server:
+              schema:
+                type: string
+              example: nginx/1.28.0
+            Date:
+              schema:
+                type: string
+              example: Thu, 29 Jan 2026 07:07:08 GMT
+            Content-Length:
+              schema:
+                type: integer
+              example: 93
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              example: Content-Type, Authorization
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              example: undefined
+            Etag:
+              schema:
+                type: string
+              example: W/"5d-ZT2Tg3G60rCRFgw5os/8A6L9ghI"
+            X-Powered-By:
+              schema:
+                type: string
+              example: Express
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: "default-src https: data: blob: 'unsafe-inline' 'unsafe-eval'"
+      tags:
+        - auth
+      description: |-
+        #### Access token авах API.
+
+        username: client_id, password: client_secret -ийг qPay -ээс авна.
+  /v2/auth/refresh:
+    post:
+      summary: refresh
+      operationId: authRefresh
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: Authorization
+          in: header
+          description: refresh_token
+          schema:
+            type: string
+          example: Bearer
+      responses:
+        "200":
+          description: refresh
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthToken"
+          headers:
+            Server:
+              schema:
+                type: string
+              example: nginx/1.28.0
+            Date:
+              schema:
+                type: string
+              example: Thu, 29 Jan 2026 07:25:07 GMT
+            Content-Length:
+              schema:
+                type: integer
+              example: 815
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              example: Content-Type, Authorization
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              example: undefined
+            Etag:
+              schema:
+                type: string
+              example: W/"32f-6MWKzfxVjWYrXjHdWsKYuQCIzHY"
+            X-Powered-By:
+              schema:
+                type: string
+              example: Express
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains; preload
+            X-XSS-Protection:
+              schema:
+                type: string
+              example: 1; mode=block
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            Referrer-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: "default-src https: data: blob: 'unsafe-inline' 'unsafe-eval'"
+            Permissions-Policy:
+              schema:
+                type: string
+              example: >-
+                geolocation=();midi=();notifications=();push=();sync-xhr=();microphone=();camera=();magnetometer=();gyroscope=();speaker=(self);vibrate=();fullscreen=(self);payment=();
+        "401":
+          description: refresh
+          headers:
+            Server:
+              schema:
+                type: string
+              example: nginx/1.28.0
+            Date:
+              schema:
+                type: string
+              example: Thu, 29 Jan 2026 07:25:43 GMT
+            Content-Length:
+              schema:
+                type: integer
+              example: 53
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              example: Content-Type, Authorization
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              example: undefined
+            Etag:
+              schema:
+                type: string
+              example: W/"35-frMBA9lZAoJZ16qEw7S6Ci+DxSY"
+            X-Powered-By:
+              schema:
+                type: string
+              example: Express
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: "default-src https: data: blob: 'unsafe-inline' 'unsafe-eval'"
+      tags:
+        - auth
+      description: |-
+        #### Access token шинэчлэн авах API. 
+        refresh_token -ийг ашиглана.
+  /v2/invoice:
+    post:
+      operationId: createInvoice
+      summary: Create
+      description: |-
+        #### Төлбөрийн нэхэмжлэл үүсгэх. 
+        invoice_code -ийг qPay -ээс олгоно.
+      tags:
+        - invoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInvoiceRequest"
+            example:
+              invoice_code: TEST_INVOICE
+              sender_invoice_no: "123455678"
+              invoice_receiver_code: "83"
+              sender_branch_code: BRANCH1
+              invoice_description: Order No1311 200.00
+              calculate_vat: false
+              tax_type: "1"
+              enable_expiry: false
+              expiry_date: "2025-10-31"
+              allow_partial: false
+              allow_exceed: false
+              allow_subscribe: true
+              next_payment_date: "2025-12-27T14:51:26.751Z"
+              subscription_interval: 9999M
+              subscription_webhook: https://hello.com
+              amount: 100000
+              callback_url: https://bd5492c3ee85.ngrok.io/payments?payment_id=12345678
+              sender_staff_code: online
+
+      parameters:
+        - name: Authorization
+          in: header
+          required: false
+          description: >-
+            eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiI5OWNmYjFiMi0zMmNjLTRhNDMtOWNjZi02NWNhM2JjOTg0YWYiLCJzZXNzaW9uX2lkIjoiN2wzdnN2eW81RWtDbHRiQk9SU0Nrb29LZDN6aDhsQVMiLCJpYXQiOjE3NTY3MTM4NDMsImV4cCI6MzUxMzUxNDA4Nn0.OMczW21CNPZawyX02oCIPUsSfM9FK8dF7NtcgebuncQ
+          deprecated: false
+          schema: {}
+          example: Bearer
+      responses:
+        "200":
+          description: Create Invoice
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateInvoiceResponse"
+          headers:
+            Server:
+              schema:
+                type: string
+              example: nginx/1.28.0
+            Date:
+              schema:
+                type: string
+              example: Thu, 29 Jan 2026 08:24:32 GMT
+            Content-Length:
+              schema:
+                type: integer
+              example: 17933
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              example: Content-Type, Authorization
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              example: undefined
+            Etag:
+              schema:
+                type: string
+              example: W/"460d-X0Vd/SmqxqAWB5TwtvE7UY0NoCg"
+            X-Powered-By:
+              schema:
+                type: string
+              example: Express
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains; preload
+            X-XSS-Protection:
+              schema:
+                type: string
+              example: 1; mode=block
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            Referrer-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: "default-src https: data: blob: 'unsafe-inline' 'unsafe-eval'"
+            Permissions-Policy:
+              schema:
+                type: string
+              example: >-
+                geolocation=();midi=();notifications=();push=();sync-xhr=();microphone=();camera=();magnetometer=();gyroscope=();speaker=(self);vibrate=();fullscreen=(self);payment=();
+
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiError" }
+
+  /v2/invoice/{invoiceId}:
+    delete:
+      summary: Cancel
+      operationId: deleteInvoice
+      parameters:
+        - name: Authorization
+          in: header
+          description: access_token
+          schema:
+            type: string
+          example: Bearer
+        - name: invoiceId
+          in: path
+          schema:
+            type: string
+          required: true
+          description: Invoice ID
+          example: ad2f6483-88e5-429e-a32f-766ce19922bf
+      responses:
+        "200":
+          description: Success
+          headers:
+            X-Powered-By:
+              schema:
+                type: string
+              example: Express
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              example: undefined
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              example: Content-Type, Authorization
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Content-Length:
+              schema:
+                type: integer
+              example: 2
+            ETag:
+              schema:
+                type: string
+              example: W/"2-vyGp6PvFo4RvsFtPoIWeCReyIC8"
+            Date:
+              schema:
+                type: string
+              example: Thu, 27 Feb 2020 10:38:07 GMT
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+          content:
+            application/json:
+              schema:
+                type: object
+              example: {}
+        "400":
+          description: Cancel
+          headers:
+            Server:
+              schema:
+                type: string
+              example: nginx/1.28.0
+            Date:
+              schema:
+                type: string
+              example: Thu, 29 Jan 2026 08:25:12 GMT
+            Content-Length:
+              schema:
+                type: integer
+              example: 99
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              example: Content-Type, Authorization
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              example: undefined
+            Etag:
+              schema:
+                type: string
+              example: W/"63-64bUtqs4qNsE5V7duCQqumutYk0"
+            X-Powered-By:
+              schema:
+                type: string
+              example: Express
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: "default-src https: data: blob: 'unsafe-inline' 'unsafe-eval'"
+      tags:
+        - invoice
+      description: |-
+        #### Төлбөрийн нэхэмжлэл цуцлах
+
+        Query Parameter -д qPay invoice_id -ийг илгээнэ.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+            example: {}
+    get:
+      summary: get invoice
+      description: Get invoice
+      operationId: getInvoice
+      parameters:
+        - name: Authorization
+          in: header
+          description: access_token
+          schema:
+            type: string
+          example: Bearer
+        - in: path
+          name: invoiceId
+          schema:
+            type: string
+          required: true
+          description: Invoice ID
+          example: ad2f6483-88e5-429e-a32f-766ce19922bf
+      responses:
+        "200":
+          description: get invoice
+          headers:
+            Server:
+              schema:
+                type: string
+              example: nginx/1.28.0
+            Date:
+              schema:
+                type: string
+              example: Thu, 29 Jan 2026 08:25:26 GMT
+            Content-Length:
+              schema:
+                type: integer
+              example: 1194
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              example: Content-Type, Authorization
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              example: undefined
+            Etag:
+              schema:
+                type: string
+              example: W/"4aa-4XnQFOy6qixNZp6WwdmOYWBIFhM"
+            X-Powered-By:
+              schema:
+                type: string
+              example: Express
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains; preload
+            X-XSS-Protection:
+              schema:
+                type: string
+              example: 1; mode=block
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            Referrer-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: "default-src https: data: blob: 'unsafe-inline' 'unsafe-eval'"
+            Permissions-Policy:
+              schema:
+                type: string
+              example: >-
+                geolocation=();midi=();notifications=();push=();sync-xhr=();microphone=();camera=();magnetometer=();gyroscope=();speaker=(self);vibrate=();fullscreen=(self);payment=();
+      tags:
+        - invoice
+    parameters:
+      - name: invoiceId
+        in: path
+        required: true
+        description: Invoice ID
+        schema:
+          type: string
+        example: ad2f6483-88e5-429e-a32f-766ce19922bf
+  /v2/payment/{paymentId}:
+    get:
+      summary: get
+      operationId: getPayment
+      parameters:
+        - name: Authorization
+          in: header
+          description: access_token
+          schema:
+            type: string
+          example: Bearer
+        - name: paymentId
+          in: path
+          schema:
+            type: string
+          required: true
+          example: "1231241123124126"
+      responses:
+        "200":
+          description: get
+          headers:
+            Server:
+              schema:
+                type: string
+              example: nginx/1.28.0
+            Date:
+              schema:
+                type: string
+              example: Thu, 29 Jan 2026 08:25:37 GMT
+            Content-Length:
+              schema:
+                type: integer
+              example: 667
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              example: Content-Type, Authorization
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              example: undefined
+            Etag:
+              schema:
+                type: string
+              example: W/"29b-rjRPrQ90P1ISsHWrd08cNHBJavg"
+            X-Powered-By:
+              schema:
+                type: string
+              example: Express
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains; preload
+            X-XSS-Protection:
+              schema:
+                type: string
+              example: 1; mode=block
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            Referrer-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: "default-src https: data: blob: 'unsafe-inline' 'unsafe-eval'"
+            Permissions-Policy:
+              schema:
+                type: string
+              example: >-
+                geolocation=();midi=();notifications=();push=();sync-xhr=();microphone=();camera=();magnetometer=();gyroscope=();speaker=(self);vibrate=();fullscreen=(self);payment=();
+      tags:
+        - payment
+      description: |-
+        #### Төлбөрийн мэдээлэл авах
+
+        Query Parameter -д qPay payment_id -ийг илгээнэ.
+    parameters:
+      - name: paymentId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "130659259909786"
+  /v2/payment/check:
+    post:
+      summary: check
+      operationId: checkPayment
+      parameters:
+        - name: Authorization
+          in: header
+          required: false
+          description: access_token
+          deprecated: false
+          schema: {}
+          example: Bearer
+      responses:
+        "200":
+          description: check
+          headers:
+            Server:
+              schema:
+                type: string
+              example: nginx/1.28.0
+            Date:
+              schema:
+                type: string
+              example: Thu, 29 Jan 2026 08:27:20 GMT
+            Content-Length:
+              schema:
+                type: integer
+              example: 593
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              example: Content-Type, Authorization
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              example: undefined
+            Etag:
+              schema:
+                type: string
+              example: W/"251-Gfr2uwsqhnS/mCtG5tLhrpfv/h0"
+            X-Powered-By:
+              schema:
+                type: string
+              example: Express
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains; preload
+            X-XSS-Protection:
+              schema:
+                type: string
+              example: 1; mode=block
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            Referrer-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: "default-src https: data: blob: 'unsafe-inline' 'unsafe-eval'"
+            Permissions-Policy:
+              schema:
+                type: string
+              example: >-
+                geolocation=();midi=();notifications=();push=();sync-xhr=();microphone=();camera=();magnetometer=();gyroscope=();speaker=(self);vibrate=();fullscreen=(self);payment=();
+      tags:
+        - payment
+      description: |-
+        #### Төлбөр төлөгдсөн эсэхийг шалгах
+        Нэхэмжлэлийн төлбөр шалгах бол object_type=INVOICE
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                object_type:
+                  type: string
+                object_id:
+                  type: string
+                offset:
+                  type: object
+                  properties:
+                    page_number:
+                      type: integer
+                    page_limit:
+                      type: integer
+            example:
+              object_type: INVOICE
+              object_id: cefde663-5f20-4499-99e0-de09a6aafd45
+              offset:
+                page_number: 1
+                page_limit: 100
+  /v2/payment/cancel/{paymentId}:
+    delete:
+      summary: cancel
+      operationId: cancelPayment
+      parameters:
+        - name: Authorization
+          in: header
+          required: false
+          description: access_token
+          deprecated: false
+          schema: {}
+          example: Bearer
+        - name: paymentId
+          in: path
+          schema:
+            type: string
+          required: true
+          example: "319558915525246"
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          headers:
+            Server:
+              schema:
+                type: string
+              example: nginx/1.28.0
+            Date:
+              schema:
+                type: string
+              example: Thu, 29 Jan 2026 08:27:02 GMT
+            Content-Length:
+              schema:
+                type: integer
+              example: 55
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              example: Content-Type, Authorization
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              example: undefined
+            Etag:
+              schema:
+                type: string
+              example: W/"37-yNWhHn52UIDiIHlZcX1GX3m8/FI"
+            X-Powered-By:
+              schema:
+                type: string
+              example: Express
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: "default-src https: data: blob: 'unsafe-inline' 'unsafe-eval'"
+      tags:
+        - payment
+      description: |-
+        #### Төлөгдсөн төлбөрийг цуцлах
+
+        Query Parameter -д qPay payment_id -ийг илгээнэ.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+            example:
+              callback_url: https://qpay.mn/payment/result?payment_id=011449136018274
+              note: butsaalt
+    parameters:
+      - name: paymentId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "319558915525246"
+  /v2/payment/refund/{paymentId}:
+    delete:
+      summary: refund
+      operationId: refundPayment
+      parameters:
+        - name: Authorization
+          in: header
+          required: false
+          description: access_token
+          deprecated: false
+          schema: {}
+          example: Bearer
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "319558915525246"
+      responses:
+        "200":
+          description: OK
+
+        "400":
+          description: refund
+          headers:
+            Server:
+              schema:
+                type: string
+              example: nginx/1.28.0
+            Date:
+              schema:
+                type: string
+              example: Thu, 29 Jan 2026 08:26:31 GMT
+            Content-Length:
+              schema:
+                type: integer
+              example: 55
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              example: Content-Type, Authorization
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              example: undefined
+            Etag:
+              schema:
+                type: string
+              example: W/"37-yNWhHn52UIDiIHlZcX1GX3m8/FI"
+            X-Powered-By:
+              schema:
+                type: string
+              example: Express
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: "default-src https: data: blob: 'unsafe-inline' 'unsafe-eval'"
+      tags:
+        - payment
+      description: |-
+        #### Төлөгдсөн төлбөрийг цуцлах
+
+        Query Parameter -д qPay payment_id -ийг илгээнэ.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: string
+            example:
+              note: Butsaalt
+    parameters:
+      - name: paymentId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "319558915525246"
+  /v2/payment/list:
+    post:
+      summary: list
+      operationId: listPayment
+      parameters:
+        - name: Authorization
+          in: header
+          required: false
+          description: access_token
+          deprecated: false
+          schema: {}
+          example: Bearer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                object_type:
+                  type: string
+                object_id:
+                  type: string
+                merchant_branch_code:
+                  type: string
+                merchant_terminal_code:
+                  type: string
+                merchant_staff_code:
+                  type: string
+                offset:
+                  type: object
+                  properties:
+                    page_number:
+                      type: integer
+                    page_limit:
+                      type: integer
+              required:
+                - object_type
+                - object_id
+                - offset
+            example:
+              object_type: INVOICE
+              object_id: TEST_INVOICE
+              offset:
+                page_number: 1
+                page_limit: 1000
+      responses:
+        "200":
+          description: list
+          headers:
+            Server:
+              schema:
+                type: string
+              example: nginx/1.28.0
+            Date:
+              schema:
+                type: string
+              example: Sat, 31 Jan 2026 15:27:02 GMT
+            Content-Length:
+              schema:
+                type: integer
+              example: 47960
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              example: Content-Type, Authorization
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              example: undefined
+            Etag:
+              schema:
+                type: string
+              example: W/"bb58-8LLpqywaX5SLD2TK80S1nyThAcw"
+            X-Powered-By:
+              schema:
+                type: string
+              example: Express
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains; preload
+            X-XSS-Protection:
+              schema:
+                type: string
+              example: 1; mode=block
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            Referrer-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: "default-src https: data: blob: 'unsafe-inline' 'unsafe-eval'"
+            Permissions-Policy:
+              schema:
+                type: string
+              example: >-
+                geolocation=();midi=();notifications=();push=();sync-xhr=();microphone=();camera=();magnetometer=();gyroscope=();speaker=(self);vibrate=();fullscreen=(self);payment=();
+        "400":
+          description: list
+          headers:
+            Server:
+              schema:
+                type: string
+              example: nginx/1.28.0
+            Date:
+              schema:
+                type: string
+              example: Thu, 29 Jan 2026 08:26:21 GMT
+            Content-Length:
+              schema:
+                type: integer
+              example: 243
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              example: Content-Type, Authorization
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              example: undefined
+            Etag:
+              schema:
+                type: string
+              example: W/"f3-MQxsEP891xjhPHTwpgx1tSMzmbg"
+            X-Powered-By:
+              schema:
+                type: string
+              example: Express
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: "default-src https: data: blob: 'unsafe-inline' 'unsafe-eval'"
+        "500":
+          description: list
+          headers:
+            Server:
+              schema:
+                type: string
+              example: nginx/1.28.0
+            Date:
+              schema:
+                type: string
+              example: Sat, 31 Jan 2026 15:26:48 GMT
+            Content-Length:
+              schema:
+                type: integer
+              example: 47
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              example: Content-Type, Authorization
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              example: undefined
+            Etag:
+              schema:
+                type: string
+              example: W/"2f-bUWoV4SZOfyLwTuXixxyPCn/dO4"
+            X-Powered-By:
+              schema:
+                type: string
+              example: Express
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: "default-src https: data: blob: 'unsafe-inline' 'unsafe-eval'"
+      tags:
+        - payment
+      description: Төлбөр төлөлтийн жагсаалт авах
+        customer_id, card_terminal_id, p2p_terminal_id -ийн мэдээллийг qPay
+        merchant web admin-аас эсвэл qPay -ээс авна.
+
+  /v2/ebarimt/create:
+    post:
+      summary: create
+      operationId: createEbarimt
+      description: Create Ebarimt
+      parameters:
+        - name: Authorization
+          in: header
+          description: access_token
+          schema:
+            type: string
+          example: Bearer
+      responses:
+        "200":
+          description: create
+          headers:
+            Server:
+              schema:
+                type: string
+              example: nginx/1.28.0
+            Date:
+              schema:
+                type: string
+              example: Thu, 29 Jan 2026 08:27:47 GMT
+            Content-Length:
+              schema:
+                type: integer
+              example: 2
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              example: Content-Type, Authorization
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              example: undefined
+            Etag:
+              schema:
+                type: string
+              example: W/"2-vyGp6PvFo4RvsFtPoIWeCReyIC8"
+            X-Powered-By:
+              schema:
+                type: string
+              example: Express
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains; preload
+            X-XSS-Protection:
+              schema:
+                type: string
+              example: 1; mode=block
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            Referrer-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: "default-src https: data: blob: 'unsafe-inline' 'unsafe-eval'"
+            Permissions-Policy:
+              schema:
+                type: string
+              example: >-
+                geolocation=();midi=();notifications=();push=();sync-xhr=();microphone=();camera=();magnetometer=();gyroscope=();speaker=(self);vibrate=();fullscreen=(self);payment=();
+        "400":
+          description: create
+          headers:
+            Server:
+              schema:
+                type: string
+              example: nginx/1.28.0
+            Date:
+              schema:
+                type: string
+              example: Sun, 01 Feb 2026 10:45:30 GMT
+            Content-Length:
+              schema:
+                type: integer
+              example: 98
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              example: Content-Type, Authorization
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              example: undefined
+            Etag:
+              schema:
+                type: string
+              example: W/"62-E+8ZNrW0wnHXbhjfx6P8/SVS9HM"
+            X-Powered-By:
+              schema:
+                type: string
+              example: Express
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: "default-src https: data: blob: 'unsafe-inline' 'unsafe-eval'"
+        "500":
+          description: create
+          headers:
+            Server:
+              schema:
+                type: string
+              example: nginx/1.28.0
+            Date:
+              schema:
+                type: string
+              example: Thu, 29 Jan 2026 08:27:30 GMT
+            Content-Length:
+              schema:
+                type: integer
+              example: 23
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              example: Content-Type, Authorization
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              example: undefined
+            Etag:
+              schema:
+                type: string
+              example: W/"17-8tlByIdLJ7AgxmSq+SP97bzFBA4"
+            X-Powered-By:
+              schema:
+                type: string
+              example: Express
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: "default-src https: data: blob: 'unsafe-inline' 'unsafe-eval'"
+      tags:
+        - ebarimt
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+            example:
+              payment_id: "858747721226956"
+              ebarimt_receiver_type: COMPANY
+              ebarimt_receiver: "1234567"
+              callback_url: https://webhook.site/cfd18b40-cddc-4097-82cd-55d0cff7581c
+  /v2/subscription/{subscriptionId}:
+    get:
+      summary: Get
+      operationId: getSubscription
+      description: Get subscription by ID
+      parameters:
+        - name: Authorization
+          in: header
+          description: access_token
+          schema:
+            type: string
+          example: Bearer
+        - name: subscriptionId
+          in: path
+          schema:
+            type: string
+          required: true
+          example: d08e83ac-d4b4-40ac-8903-cd5267bf9a00
+      responses:
+        "200":
+          description: Get
+          headers:
+            Server:
+              schema:
+                type: string
+              example: nginx/1.28.0
+            Date:
+              schema:
+                type: string
+              example: Thu, 29 Jan 2026 08:28:02 GMT
+            Content-Length:
+              schema:
+                type: integer
+              example: 5140
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              example: Content-Type, Authorization
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              example: undefined
+            Etag:
+              schema:
+                type: string
+              example: W/"1414-QUUC34Dv5pfvFpqxrd4VUdjRn0U"
+            X-Powered-By:
+              schema:
+                type: string
+              example: Express
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains; preload
+            X-XSS-Protection:
+              schema:
+                type: string
+              example: 1; mode=block
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            Referrer-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: "default-src https: data: blob: 'unsafe-inline' 'unsafe-eval'"
+            Permissions-Policy:
+              schema:
+                type: string
+              example: >-
+                geolocation=();midi=();notifications=();push=();sync-xhr=();microphone=();camera=();magnetometer=();gyroscope=();speaker=(self);vibrate=();fullscreen=(self);payment=();
+      tags:
+        - subscription
+    delete:
+      summary: Delete
+      operationId: deleteSubscription
+      description: Delete subscription by ID
+      parameters:
+        - name: Authorization
+          in: header
+          description: access_token
+          schema:
+            type: string
+          example: Bearer
+        - name: subscriptionId
+          in: path
+          schema:
+            type: string
+          required: true
+          example: d08e83ac-d4b4-40ac-8903-cd5267bf9a00
+      responses:
+        "200":
+          description: Delete
+          headers:
+            Server:
+              schema:
+                type: string
+              example: nginx/1.28.0
+            Date:
+              schema:
+                type: string
+              example: Thu, 29 Jan 2026 08:28:16 GMT
+            Content-Length:
+              schema:
+                type: integer
+              example: 2
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              example: Content-Type, Authorization
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              example: undefined
+            Etag:
+              schema:
+                type: string
+              example: W/"2-vyGp6PvFo4RvsFtPoIWeCReyIC8"
+            X-Powered-By:
+              schema:
+                type: string
+              example: Express
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains; preload
+            X-XSS-Protection:
+              schema:
+                type: string
+              example: 1; mode=block
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            Referrer-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: "default-src https: data: blob: 'unsafe-inline' 'unsafe-eval'"
+            Permissions-Policy:
+              schema:
+                type: string
+              example: >-
+                geolocation=();midi=();notifications=();push=();sync-xhr=();microphone=();camera=();magnetometer=();gyroscope=();speaker=(self);vibrate=();fullscreen=(self);payment=();
+      tags:
+        - subscription
+    parameters:
+      - name: subscriptionId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: d08e83ac-d4b4-40ac-8903-cd5267bf9a00
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+    BasicAuth:
+      type: http
+      scheme: basic
+  schemas:
+    AuthToken:
+      type: object
+      required:
+        - token_type
+        - refresh_expires_in
+        - refresh_token
+        - access_token
+        - expires_in
+        - scope
+        - not-before-policy
+        - session_state
+
+      properties:
+        token_type:
+          type: string
+        refresh_expires_in:
+          type: integer
+        refresh_token:
+          type: string
+        access_token:
+          type: string
+        expires_in:
+          type: integer
+        scope:
+          type: string
+        not-before-policy:
+          type: string
+        session_state:
+          type: string
+    CreateInvoiceRequest:
+      type: object
+      required:
+        - invoice_code
+        - sender_invoice_no
+        - invoice_receiver_code
+        - invoice_description
+      properties:
+        invoice_code:
+          type: string
+          maxLength: 45
+          description: qPay-ээс өгсөн нэхэмжлэхийн код
+        sender_invoice_no:
+          type: string
+          maxLength: 45
+          description: Байгууллагаас үүсгэх давтагдашгүй нэхэмжлэлийн дугаар
+        subscription_webhook:
+          type: string
+          format: uri
+          description: Callback URL
+        next_payment_date:
+          type: string
+          format: date-time
+          description: Төлбөр татах өдөр цаг
+        sender_branch_code:
+          type: string
+          maxLength: 45
+        sender_branch_data:
+          $ref: "#/components/schemas/BranchData"
+        sender_staff_code:
+          type: string
+          maxLength: 100
+        allow_subscribe:
+          type: boolean
+        sender_staff_data:
+          type: object
+          description: Байгууллагын ажилтаны мэдээлэл (spec тодорхойгүй)
+        sender_terminal_code:
+          type: string
+          maxLength: 45
+        sender_terminal_data:
+          $ref: "#/components/schemas/TerminalData"
+        invoice_receiver_code:
+          type: string
+          maxLength: 45
+          description: Нэхэмжлэхийг хүлээн авч буй харилцагчийн дахин давтагдашгүй дугаар
+        invoice_receiver_data:
+          $ref: "#/components/schemas/ReceiverData"
+        invoice_description:
+          type: string
+          maxLength: 255
+        subscription_interval:
+          type: string
+          pattern: '^[1-9]\d{0,3}[DWM]$'
+        invoice_due_date:
+          type: string
+          format: date
+        enable_expiry:
+          type: boolean
+          default: false
+          description: Хугацаа хэтэрсэн ч төлж болох эсэх
+        expiry_date:
+          type: string
+          format: date
+          description: Нэхэмжлэхийн дуусах хугацаа
+        tax_type:
+          type: string
+          description: "1 - НӨАТ тооцогдох бүтээгдэхүүн 2: НӨАТ-гүй бүтээгдэхүүн 3: НӨАТ-аас чөлөөлөгдөх бүтээгдэхүүн /tax_type: 2,3 үед calculate_vat-ийг false гэж үүсгэнэ үү/"
+          enum: ["1", "2", "3"]
+        calculate_vat:
+          type: boolean
+          default: false
+          description: НӨАТ-ын тооцоолол
+        tax_customer_code:
+          type: string
+          description: >-
+            ИБаримт үүсгүүлэх байгууллага/хэрэглэгчийн регистр (spec тайлбар нь
+            олон утгатай тул string гэж үлдээлээ)
+        line_tax_code:
+          type: string
+          description: БТҮК код (Lines хоосон үед ашиглана)
+        allow_partial:
+          type: boolean
+          default: false
+          description: Хувааж төлж болох эсэх
+        minimum_amount:
+          type: number
+          description: Төлөх хамгийн бага дүн
+        allow_exceed:
+          type: boolean
+          default: false
+          description: Илүү төлж болох эсэх
+        maximum_amount:
+          type: number
+          description: Төлөх хамгийн их дүн
+        amount:
+          type: number
+          description: Мөнгөн дүн
+        callback_url:
+          type: string
+          maxLength: 255
+          format: uri
+          description: Callback URL
+        note:
+          type: string
+          maxLength: 1000
+        lines:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: "#/components/schemas/InvoiceLine"
+        transactions:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: "#/components/schemas/Transaction"
+      additionalProperties: false
+    BranchData:
+      type: object
+      properties:
+        register:
+          type: string
+          maxLength: 20
+        name:
+          type: string
+          maxLength: 100
+        email:
+          type: string
+          maxLength: 255
+          format: email
+        phone:
+          type: string
+          maxLength: 20
+        address:
+          $ref: "#/components/schemas/Address"
+      additionalProperties: false
+    Address:
+      type: object
+      properties:
+        city:
+          type: string
+          maxLength: 100
+        district:
+          type: string
+          maxLength: 100
+        street:
+          type: string
+          maxLength: 100
+        building:
+          type: string
+          maxLength: 100
+        address:
+          type: string
+          maxLength: 100
+        zipcode:
+          type: string
+          maxLength: 20
+        longitude:
+          type: string
+          maxLength: 20
+        latitude:
+          type: string
+          maxLength: 20
+      additionalProperties: false
+    TerminalData:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+      additionalProperties: false
+    ReceiverData:
+      type: object
+      properties:
+        register:
+          type: string
+          maxLength: 20
+        name:
+          type: string
+          maxLength: 100
+        email:
+          type: string
+          maxLength: 255
+          format: email
+        phone:
+          type: string
+          maxLength: 20
+        address:
+          $ref: "#/components/schemas/Address"
+      additionalProperties: false
+    InvoiceLine:
+      type: object
+      required:
+        - line_description
+        - line_quantity
+        - line_unit_price
+      properties:
+        sender_product_code:
+          type: string
+          maxLength: 45
+        tax_product_code:
+          type: string
+          maxLength: 45
+        line_description:
+          type: string
+          maxLength: 255
+        line_quantity:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          format: int32
+
+        line_unit_price:
+          type: number
+          minimum: 0
+          maximum: 100000000000000
+          format: double
+
+        note:
+          maxLength: 1000
+          type: string
+        discounts:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: "#/components/schemas/Discount"
+        surcharges:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: "#/components/schemas/Surcharge"
+        taxes:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: "#/components/schemas/Tax"
+      additionalProperties: false
+    Discount:
+      type: object
+      required:
+        - description
+        - amount
+      properties:
+        discount_code:
+          type: string
+          maxLength: 45
+        description:
+          type: string
+          maxLength: 100
+        amount:
+          type: number
+        note:
+          type: string
+      additionalProperties: false
+    Surcharge:
+      type: object
+      required:
+        - description
+        - amount
+      properties:
+        surcharge_code:
+          type: string
+          maxLength: 45
+        description:
+          type: string
+          maxLength: 100
+        amount:
+          type: number
+        note:
+          type: string
+      additionalProperties: false
+    Tax:
+      type: object
+      required:
+        - description
+        - amount
+      properties:
+        tax_code:
+          type: string
+          description: Tатварын код (e.g. CITY_TAX, VAT)
+          example: VAT
+        description:
+          type: string
+          maxLength: 100
+        amount:
+          type: number
+        city_tax:
+          type: number
+          nullable: true
+        note:
+          type: string
+      additionalProperties: false
+    Transaction:
+      type: object
+      required:
+        - description
+        - amount
+      properties:
+        description:
+          type: string
+          maxLength: 100
+        amount:
+          type: number
+        accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/BankAccount"
+      additionalProperties: false
+    BankAccount:
+      type: object
+      required:
+        - account_bank_code
+        - account_number
+        - account_name
+        - account_currency
+      properties:
+        account_bank_code:
+          type: string
+          description: valid(bank)
+        account_number:
+          type: string
+          maxLength: 100
+        account_name:
+          type: string
+          maxLength: 100
+        account_currency:
+          type: string
+          description: valid(currency)
+      additionalProperties: false
+    CreateInvoiceResponse:
+      type: object
+      required:
+        - invoice_id
+        - qr_text
+        - qr_image
+        - urls
+      properties:
+        invoice_id:
+          type: string
+          description: Object id
+          example: 00f94137-66fd-4d90-b2b2-8225c1b4ed2d
+        qr_text:
+          type: string
+          description: Данс болон картын гүйлгээ дэмжих QR утга
+        qr_image:
+          type: string
+          description: Зурган хэлбэрээр үүсэх QR (data URL эсвэл base64 байж болно)
+        urls:
+          type: array
+          items:
+            $ref: "#/components/schemas/BankDeeplink"
+      additionalProperties: false
+    BankDeeplink:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        link:
+          type: string
+      additionalProperties: false
+    ApiError:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details: { type: object, additionalProperties: true }
+      required: [message]
+security:
+  - BearerAuth: []
+  - BasicAuth: []
+tags:
+  - name: invoice
+    description: Invoice APIs
+  - name: auth
+    description: Auth APIs
+  - name: subscription
+    description: Subscription APIs
+  - name: ebarimt
+    description: Ebarimt APIs
+  - name: payment
+    description: Payment APIs

@@ -14,3 +14,11 @@ wheels/
 
 # secret
 tokens/
+
+#.42c
+.42c/
+
+# ignore node_module
+node_modules/
+
+# 
