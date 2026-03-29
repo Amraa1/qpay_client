@@ -1,4 +1,4 @@
-from qpay_client.v2.enums import (
+from qpay_client.v2.schemas.enums import (
     BankCode,
     Currency,
     EbarimtReceiverType,

@@ -245,3 +245,10 @@ class AuthError(Exception):
 
     def __init__(self, detail: str) -> None:
         super().__init__(detail)
+
+
+class NetworkError(Exception):
+    """Raised when transport retries are exhausted by a network failure."""
+
+    def __init__(self, detail: str) -> None:
+        super().__init__(detail)

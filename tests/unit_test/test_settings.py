@@ -1,85 +1,62 @@
-import importlib
-
-from qpay_client.v2.settings import QPaySettings, SecretStr
-
-
-def test_default_settings():
-    # Client defaults
-    username = "TEST_MERCHANT"
-    password = "123456"
-    sandbox = True
-    token_leeway = 60
-    client_retries = 5
-    client_delay = 0.5
-    client_jitter = 0.5
-    payment_check_retries = 5
-    payment_check_delay = 0.5
-    payment_check_jitter = 0.5
-    base_url = "https://merchant-sandbox.qpay.mn/v2"
-
-    settings1 = QPaySettings()
-    assert settings1.username == username
-    assert settings1.password.get_secret_value() == password
-    assert settings1.base_url == base_url
-    assert settings1.sandbox == sandbox
-    assert settings1.token_leeway == token_leeway
-    assert settings1.client_retries == client_retries
-    assert settings1.client_delay == client_delay
-    assert settings1.client_jitter == client_jitter
-    assert settings1.payment_check_retries == payment_check_retries
-    assert settings1.payment_check_delay == payment_check_delay
-    assert settings1.payment_check_jitter == payment_check_jitter
+from qpay_client.v2.defaults import MERCHANT_URL, SANDBOX_INVOICE_CODE, SANDBOX_PASSWORD, SANDBOX_URL, SANDBOX_USERNAME
+from qpay_client.v2.settings import QPaySettings
 
 
-def test_settings_from_env(monkeypatch):
-    monkeypatch.setenv("QPAY_ENV_FILE", ".env.test")
+def test_sandbox_settings_use_expected_defaults():
+    settings = QPaySettings.sandbox()
 
-    # SettingsConfig is run at module import, so for env var to apply we have reload the module
-    # import/reload the module that defines Settings
-    import qpay_client.v2.settings as settings_mod
-
-    importlib.reload(settings_mod)  # ensures model_config is re-evaluated
-    Settings = settings_mod.QPaySettings
-
-    # test env values
-    username = "TEST_USER"
-    password = "my_secret_password"
-    sandbox = False
-
-    settings2 = Settings()
-    assert settings2.username == username
-    assert settings2.password.get_secret_value() == password
-    assert settings2.sandbox == sandbox
+    assert settings.username == SANDBOX_USERNAME
+    assert settings.password == SANDBOX_PASSWORD
+    assert settings.invoice_code == SANDBOX_INVOICE_CODE
+    assert settings.base_url == SANDBOX_URL
+    assert settings.token_leeway == 60.0
+    assert settings.client_retries == 5
+    assert settings.client_delay == 0.5
+    assert settings.client_jitter == 0.5
+    assert settings.payment_check_retries == 5
+    assert settings.payment_check_delay == 0.5
+    assert settings.payment_check_jitter == 0.5
 
 
-def test_settings_with_arguments():
-    # Custom settings values
-    username = "BLABLA"
-    password = "HelloWorld"
-    sandbox = False
-    base_url = "https://merchant.qpay.mn/v2"
-    token_leeway = 123
-    client_retries = 9
-    client_delay = 0.1
-    client_jitter = 0.1
-    payment_check_retries = 9
-    payment_check_delay = 0.1
-    payment_check_jitter = 0.1
-
-    settings = QPaySettings(
-        username=username,
-        password=SecretStr(password),
-        sandbox=sandbox,
-        token_leeway=token_leeway,
-        client_retries=client_retries,
-        client_delay=client_delay,
-        client_jitter=client_jitter,
-        payment_check_retries=payment_check_retries,
-        payment_check_delay=payment_check_delay,
-        payment_check_jitter=payment_check_jitter,
+def test_sandbox_settings_allow_overrides():
+    settings = QPaySettings.sandbox(
+        username="override-user",
+        password="override-password",
+        invoice_code="OVERRIDE-INVOICE",
+        client_retries=1,
+        payment_check_retries=2,
     )
 
-    assert settings.username == username
-    assert settings.password.get_secret_value() == password
-    assert settings.sandbox == sandbox
-    assert settings.base_url == base_url
+    assert settings.username == "override-user"
+    assert settings.password == "override-password"
+    assert settings.invoice_code == "OVERRIDE-INVOICE"
+    assert settings.base_url == SANDBOX_URL
+    assert settings.client_retries == 1
+    assert settings.payment_check_retries == 2
+
+
+def test_production_settings_use_merchant_url_and_custom_values():
+    settings = QPaySettings.production(
+        username="merchant-user",
+        password="merchant-password",
+        invoice_code="INV-123",
+        token_leeway=123.0,
+        client_retries=9,
+        client_delay=0.1,
+        client_jitter=0.2,
+        payment_check_retries=3,
+        payment_check_delay=0.4,
+        payment_check_jitter=0.1,
+    )
+
+    assert settings.username == "merchant-user"
+    assert settings.password == "merchant-password"
+    assert settings.invoice_code == "INV-123"
+    assert settings.base_url == MERCHANT_URL
+    assert settings.token_leeway == 123.0
+    assert settings.client_retries == 9
+    assert settings.client_delay == 0.1
+    assert settings.client_jitter == 0.2
+    assert settings.payment_check_retries == 3
+    assert settings.payment_check_delay == 0.4
+    assert settings.payment_check_jitter == 0.1

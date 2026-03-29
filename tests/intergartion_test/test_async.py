@@ -6,9 +6,10 @@ from decimal import Decimal
 
 import pytest
 
-from qpay_client.v2 import QPayClient, QPayError, QPaySettings
-from qpay_client.v2.enums import ObjectType
-from qpay_client.v2.schemas import (
+from qpay_client.v2 import AsyncQPayClient, QPayError, QPaySettings
+from qpay_client.v2.defaults import SANDBOX_INVOICE_CODE, SANDBOX_URL
+from qpay_client.v2.schemas.enums import ObjectType
+from qpay_client.v2.schemas.schemas import (
     InvoiceCreateSimpleRequest,
     Offset,
     PaymentCancelRequest,
@@ -18,10 +19,10 @@ from qpay_client.v2.schemas import (
 
 # --- markers and controls -----------------------------------------------------
 
-pytestmark = pytest.mark.asyncio
+pytestmark = [pytest.mark.asyncio, pytest.mark.integration]
 
-# To avoid accidental live hits in CI, require explicit opt-in unless user insists.
-RUN_LIVE = os.environ.get("QPAY_RUN_LIVE_TESTS", "1") != "0"
+# To avoid accidental live hits in CI, require explicit opt-in.
+RUN_LIVE = os.environ.get("QPAY_RUN_LIVE_TESTS", "0") == "1"
 
 skip_live = pytest.mark.skipif(
     not RUN_LIVE,
@@ -42,13 +43,17 @@ def _unique_sender_invoice_no() -> str:
     return f"INV-{int(time.time())}-{uuid.uuid4().hex[:6].upper()}"
 
 
-async def _new_client() -> QPayClient:
+async def _new_client() -> AsyncQPayClient:
     # test client settings
     settings = QPaySettings(
+        username=SANDBOX_USERNAME,
+        password=SANDBOX_PASSWORD,
+        invoice_code=SANDBOX_INVOICE_CODE,
+        base_url=SANDBOX_URL,
         client_retries=0,
         payment_check_retries=0,
     )
-    return QPayClient(settings=settings)
+    return AsyncQPayClient(settings=settings)
 
 
 # --- tests --------------------------------------------------------------------
@@ -70,8 +75,8 @@ async def test_refresh_token_path_works():
     assert tok1
 
     # Force refresh path by marking access expired but refresh valid
-    client._auth_state.refresh_token_expiry = 0
-    client._auth_state.access_token_expiry = 0
+    client._auth_state.refresh_token_expiry_at = 0
+    client._auth_state.access_token_expiry_at = 0
 
     # This should call /auth/refresh under the hood and keep us authenticated
     tok2 = await client._get_auth_token()
@@ -155,7 +160,7 @@ async def test_payment_cancel_and_refund_fail_gracefully_for_unpaid():
         await client.payment_cancel(bogus_payment_id, PaymentCancelRequest())
 
     # payment_refund -> returns status code via client (needs a payload)
-    from qpay_client.v2.schemas import PaymentRefundRequest
+    from qpay_client.v2.schemas.schemas import PaymentRefundRequest
 
     refund_req = PaymentRefundRequest(note="test")
     with pytest.raises(QPayError):

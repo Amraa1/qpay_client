@@ -4,7 +4,7 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from qpay_client.v2.enums import (
+from qpay_client.v2.schemas.enums import (
     BankCode,
     Currency,
     EbarimtReceiverType,
@@ -16,7 +16,7 @@ from qpay_client.v2.enums import (
 
 # Import from your uploaded files' package path
 # Adjust if your project structure differs.
-from qpay_client.v2.schemas import (
+from qpay_client.v2.schemas.schemas import (
     Account,
     Address,
     CancelPaymentRequest,

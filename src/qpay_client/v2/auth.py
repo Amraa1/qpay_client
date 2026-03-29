@@ -4,7 +4,7 @@ import time
 from dataclasses import dataclass
 
 from .error import AuthError
-from .schemas import TokenResponse
+from .schemas.schemas import TokenResponse
 
 
 def _normalize_to_capital(token_type: str) -> str:
@@ -17,9 +17,9 @@ class QpayAuthState:
 
     token_type: str = "Bearer"
     access_token: str = ""
-    access_token_expiry: float = 0  # epoch seconds
+    access_token_expiry_at: float = 0  # as epoch seconds
     refresh_token: str = ""
-    refresh_token_expiry: float = 0  # epoch seconds
+    refresh_token_expiry_at: float = 0  # as epoch seconds
     scope: str = ""
     not_before_policy: str = ""
     session_state: str = ""
@@ -46,20 +46,20 @@ class QpayAuthState:
 
     def is_access_expired(self, leeway: float = 60) -> bool:
         """Used to check if access token is expired."""
-        return time.time() >= self.access_token_expiry - leeway
+        return time.time() >= self.access_token_expiry_at - leeway
 
     def is_refresh_expired(self, leeway: float = 60) -> bool:
         """Used to check if refresh token is expired."""
-        return time.time() >= self.refresh_token_expiry - leeway
+        return time.time() >= self.refresh_token_expiry_at - leeway
 
     def update(self, token_response: TokenResponse) -> None:
         """Used to update token states with token_response."""
         # QPay seem to return lowercase token type
         self.token_type = _normalize_to_capital(token_response.token_type)
         self.access_token = token_response.access_token
-        self.access_token_expiry = token_response.expires_in
+        self.access_token_expiry_at = token_response.access_expires_at
         self.refresh_token = token_response.refresh_token
-        self.refresh_token_expiry = token_response.refresh_expires_in
+        self.refresh_token_expiry_at = token_response.refresh_expires_at
         self.scope = token_response.scope
         self.not_before_policy = token_response.not_before_policy
         self.session_state = token_response.session_state

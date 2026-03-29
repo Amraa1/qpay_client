@@ -1,52 +1,65 @@
 """QPay client settings module."""
 
-import os
-import warnings
+import logging
+from dataclasses import dataclass
+from typing import Union
 
-from pydantic import Field, SecretStr, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing_extensions import Self
+from httpx import Limits, Timeout
+
+from .defaults import MERCHANT_URL, SANDBOX_INVOICE_CODE, SANDBOX_PASSWORD, SANDBOX_URL, SANDBOX_USERNAME
 
 
-class QPaySettings(BaseSettings):
+@dataclass(frozen=True)
+class QPaySettings:
     """QPay client settings."""
 
-    # QPay v2 base urls
-    _SANDBOX_URL = "https://merchant-sandbox.qpay.mn/v2"
-    _MERCHANT_URL = "https://merchant.qpay.mn/v2"
+    username: str
+    password: str
+    invoice_code: str
+    base_url: str
 
-    # Sandbox credentials for quickstart and testing
-    _SANDBOX_USERNAME = "TEST_MERCHANT"
-    _SANDBOX_PASSWORD = "123456"
+    timeout: Timeout = Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0)
+    limits: Limits = Limits(max_connections=100, max_keepalive_connections=20)
+    log_level: Union[int, str] = logging.INFO
 
-    model_config = SettingsConfigDict(
-        env_file=os.getenv("QPAY_ENV_FILE", ".env"),  # allows custom .env file
-        env_file_encoding="utf-8",
-        env_prefix="QPAY_",
-        case_sensitive=False,
-    )
-
-    # Supplying default sandbox credentials for quickstart and testing
-    username: str = Field(default="TEST_MERCHANT", description="QPay merchant username")
-    password: SecretStr = Field(default_factory=lambda: SecretStr("123456"), description="QPay merchant password")
-    sandbox: bool = Field(default=True, description="Use QPay sandbox environment")  # Boolean for sandbox or production
-    token_leeway: float = Field(default=60, description="Seconds before expiry to refresh tokens")
-
+    token_leeway: float = 60.0
     client_retries: int = 5
     client_delay: float = 0.5
     client_jitter: float = 0.5
-
     payment_check_retries: int = 5
     payment_check_delay: float = 0.5
     payment_check_jitter: float = 0.5
 
-    @property
-    def base_url(self) -> str:
-        return self._SANDBOX_URL if self.sandbox else self._MERCHANT_URL
+    @classmethod
+    def sandbox(
+        cls,
+        *,
+        username: str = SANDBOX_USERNAME,
+        password: str = SANDBOX_PASSWORD,
+        invoice_code: str = SANDBOX_INVOICE_CODE,
+        **kwargs,
+    ) -> "QPaySettings":
+        return cls(
+            username=username,
+            password=password,
+            base_url=SANDBOX_URL,
+            invoice_code=invoice_code,
+            **kwargs,
+        )
 
-    @model_validator(mode="after")
-    def warn_sandbox_credentials(self) -> Self:
-        """Warn if using default sandbox credentials."""
-        if self.sandbox and self.username == self._SANDBOX_USERNAME:
-            warnings.warn("Using default QPay sandbox credentials.", UserWarning, stacklevel=2)
-        return self
+    @classmethod
+    def production(
+        cls,
+        *,
+        username: str,
+        password: str,
+        invoice_code: str,
+        **kwargs,
+    ) -> "QPaySettings":
+        return cls(
+            username=username,
+            password=password,
+            base_url=MERCHANT_URL,
+            invoice_code=invoice_code,
+            **kwargs,
+        )

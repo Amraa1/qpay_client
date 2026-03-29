@@ -7,9 +7,10 @@ from decimal import Decimal
 import pytest
 
 # ---- imports from your package; adjust path if needed
-from qpay_client.v2 import QPayClientSync, QPayError, QPaySettings
-from qpay_client.v2.enums import ObjectType
-from qpay_client.v2.schemas import (
+from qpay_client.v2 import QPayClient, QPayError, QPaySettings
+from qpay_client.v2.defaults import SANDBOX_URL
+from qpay_client.v2.schemas.enums import ObjectType
+from qpay_client.v2.schemas.schemas import (
     InvoiceCreateSimpleRequest,
     Offset,
     PaymentCancelRequest,
@@ -21,8 +22,10 @@ from qpay_client.v2.schemas import (
 # -------------------------------------------------------------------
 # Live controls
 # -------------------------------------------------------------------
-# By default we RUN live tests since you explicitly requested integration.
-RUN_LIVE = os.environ.get("QPAY_RUN_LIVE_TESTS", "1") != "0"
+pytestmark = pytest.mark.integration
+
+# To avoid accidental live hits in CI, require explicit opt-in.
+RUN_LIVE = os.environ.get("QPAY_RUN_LIVE_TESTS", "0") == "1"
 skip_live = pytest.mark.skipif(not RUN_LIVE, reason="Set QPAY_RUN_LIVE_TESTS=1 to run live QPay sandbox tests.")
 
 SANDBOX_USERNAME = os.environ.get("QPAY_USERNAME", "TEST_MERCHANT")
@@ -35,13 +38,17 @@ def _unique_sender_invoice_no() -> str:
     return f"INV-{int(time.time())}-{uuid.uuid4().hex[:6].upper()}"
 
 
-def _client() -> QPayClientSync:
+def _client() -> QPayClient:
     # test client settings
     settings = QPaySettings(
+        username=SANDBOX_USERNAME,
+        password=SANDBOX_PASSWORD,
+        invoice_code=SANDBOX_INVOICE_CODE,
+        base_url=SANDBOX_URL,
         client_retries=0,
         payment_check_retries=0,
     )
-    return QPayClientSync(settings=settings)
+    return QPayClient(settings=settings)
 
 
 # -------------------------------------------------------------------

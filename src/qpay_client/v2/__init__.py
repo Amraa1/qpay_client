@@ -14,23 +14,23 @@ Exports:
 
 Example:
     >>> from qpay_client.v2 import QPayClient
-    >>> client = QPayClient(...)
+    >>> client = AsyncQPayClient(...)
     >>> invoice = await client.create_invoice(...)
 
-    >>> from qpay_client.v2 import QPayClientSync
-    >>> client = QPayClientSync(...)
+    >>> from qpay_client.v2 import QPayClient
+    >>> client = QPayClient(...)
     >>> invoice = client.create_invoice(...)
 
 """
 
-from .client import QPayClient
+from .clients.async_client import AsyncQPayClient
+from .clients.client import QPayClient
 from .error import QPayError
 from .settings import QPaySettings
-from .sync_client import QPayClientSync
 
 __all__ = [
+    "AsyncQPayClient",
     "QPayClient",
-    "QPayClientSync",
     "QPayError",
     "QPaySettings",
 ]
