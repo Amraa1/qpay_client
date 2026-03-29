@@ -1,7 +1,9 @@
-Sync client API references
-==========================
+Sync API
+========
 
-.. automodule:: qpay_client.v2.sync_client
+Синхрон клиент
+--------------
+
+.. autoclass:: qpay_client.v2.QPayClient
    :members:
-   :undoc-members:
    :show-inheritance:

@@ -12,5 +12,5 @@ wheels/
 # Virtual environments
 .venv
 
-# secret
-tokens/
+# docs build files
+docs/_build

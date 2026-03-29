@@ -1,4 +1,4 @@
-# QPay API Integration client
+# qpay-client
 
 ![Tests](https://github.com/Amraa1/qpay_client/actions/workflows/test.yml/badge.svg)
 ![codecov](https://codecov.io/github/Amraa1/qpay_client/graph/badge.svg?token=TIZAF2HOWT)
@@ -8,194 +8,221 @@
 ![PyPI - Downloads](https://img.shields.io/pypi/dw/qpay-client)
 ![Documentation Status](https://readthedocs.org/projects/qpay-client/badge/?version=latest)
 
-QPay API integration made simpler and safer with data validation and auto token refresh.
+`qpay-client` нь QPay v2 API-тай Python орчноос холбогдохыг хялбарчлах клиент сан юм.
+Энэ сан нь `async` болон `sync` клиент, schema validation, access token / refresh token удирдлага,
+retry logic, мөн түгээмэл endpoint-уудын typed wrapper-уудыг агуулдаг.
 
-This python package includes async and sync client. You can choose which ever suits your project.
+Баримт бичиг: [qpay-client.readthedocs.io](https://qpay-client.readthedocs.io/mn/latest/)
 
-Visit links:  
-[Package document](https://qpay-client.readthedocs.io/mn/latest/)  
-[QPay document](https://developer.qpay.mn)
+QPay developer портал: [developer.qpay.mn](https://developer.qpay.mn)
 
-## Features
+## Гол боломжууд
 
-- Client manages the access & refresh tokens.
-- Both sync and async/await support.
-- Data validation with Pydantic.
-- Retries on payment check failures.
-- Retries on server error >=500.
-- Retries on network error.
-- Clear QPay error code and with details.
-- QPay Client settings with .env support.
-- async with & with statement support.
+- `AsyncQPayClient` болон `QPayClient` хоёуланг нь дэмжинэ
+- Authentication, token refresh-ийг дотооддоо удирдана
+- Pydantic schema ашиглан request/response-ийг шалгана
+- Network error болон серверийн түр зуурын алдаанд retry хийж чадна
+- `payment_check` polling-ийг тохиргоогоор удирдаж чадна
+- `with` болон `async with` context manager дэмждэг
+- QPay алдааг `QPayError` хэлбэрээр илүү ойлгомжтой буцаана
 
-For more on `async with QPayClient() as client:` visit project documentation.
+## Суулгах
 
-## API coverage
-
-All QPay APIs on their official document is supported.
-
-### Authentication
-
-- ✅ **token**
-- ✅ **refresh**
-
-### Invoice
-
-- ✅ **Get invoice**
-- ✅ **Create simple invoice**
-- ✅ **Create detailed invoice**
-- ✅ **Create subscription invoice**
-- ✅ **Cancel invoice**
-
-### Payment
-
-- ✅ **get**
-- ✅ **list**
-- ✅ **check**
-- ✅ **cancel**
-- ✅ **refund**
-
-### Ebarimt
-
-- ✅ **get**
-- ✅ **create**
-
-### Subscription
-
-- ✅ **Get subscription**
-- ✅ **Cancel subscription**
-
-## Installation
-
-Using pip:
+`pip` ашиглах:
 
 ```bash
 pip install qpay-client
 ```
 
-Using poetry:
-
-```bash
-poetry add qpay-client
-```
-
-Using uv:
+`uv` ашиглах:
 
 ```bash
 uv add qpay-client
 ```
 
-## Usage
+`poetry` ашиглах:
 
-### Basic Example
+```bash
+poetry add qpay-client
+```
 
-Lets implement basic payment flow described in QPay developer document.
+## Хурдан эхлэх
 
-![Process diagram image](https://raw.githubusercontent.com/Amraa1/qpay_client/1ae82fced964d3959fee8e610d26903bcc075fa5/images/qpay_payment_process.svg "QPay process diagram")
-
-**Important to note:**
-
-> You are _free to implement the callback API's URI and query/params_ in anyway you want. But the callback you implement must return `Response(status_code = 200, body="SUCCESS")`.
-
-### How to implement (Async example)
-
-You don't have to worry about authentication and managing tokens. QPay client manages this behind the scene so you can focus on the important parts.
-
-You can use any web framework. I am using [Fastapi](https://fastapi.tiangolo.com/) for the example just to create a simple callback API.
+### Async клиент
 
 ```python
-
-import asyncio
 from decimal import Decimal
 
-from fastapi import FastAPI, status
+from qpay_client.v2 import AsyncQPayClient, QPaySettings
+from qpay_client.v2.schemas.schemas import InvoiceCreateSimpleRequest
 
-from qpay_client.v2 import QPayClient, QPaySettings
-from qpay_client.v2.enums import ObjectType
-from qpay_client.v2.schemas import InvoiceCreateSimpleRequest, Offset, PaymentCheckRequest
+settings = QPaySettings.sandbox()
 
-# Qpay client settings
-settings = QPaySettings()
-
-# Init async client
-client = QPayClient(settings=settings)
-
-# init FastAPI app
-app = FastAPI()
-
-# Just a dummy db
-payment_database = {}
-
-
-async def create_invoice():
-    response = await client.invoice_create(
-        InvoiceCreateSimpleRequest(
-            invoice_code="TEST_INVOICE",
-            sender_invoice_no="1234567",
-            invoice_receiver_code="terminal",
-            invoice_description="test",
-            sender_branch_code="SALBAR1",
-            amount=Decimal(1500),
-            callback_url="https://api.your-domain.mn/payments?payment_id=1234567",
+async def main():
+    async with AsyncQPayClient(settings=settings) as client:
+        invoice = await client.invoice_create(
+            InvoiceCreateSimpleRequest(
+                sender_invoice_no="ORDER-1001",
+                invoice_receiver_code="terminal",
+                invoice_description="Туршилтын нэхэмжлэх",
+                amount=Decimal("1500"),
+                callback_url="https://example.com/qpay/callback?payment_id=ORDER-1001",
+            )
         )
-    )
 
-    # keep the qpay invoice_id in database, used for checking payment later!
-    payment_database["1234567"] = {
-        "id": "1234567",
-        "invoice_id": response.invoice_id,
-        "amount": Decimal(1500),
-    }
-
-    # Showing QPay invoice to the user ...
-    print(response.qPay_shortUrl)
-
-
-# You define the uri and query/param of your callback
-# Your callback API must return
-#   Response(status_code=200, body="SUCCESS")
-@app.get("/payments", status_code=status.HTTP_200_OK)
-async def qpay_callback(payment_id: str):
-    data = payment_database.get(payment_id)
-    if not data:
-        raise ValueError("Payment not found")
-    invoice_id = str(data["invoice_id"])
-    response = await client.payment_check(
-        PaymentCheckRequest(
-            object_type=ObjectType.invoice, object_id=invoice_id, offset=Offset(page_number=1, page_limit=100)
-        )
-    )
-
-    # do something with payment ...
-
-    print(response)
-
-    # This is important !
-    return "SUCCESS"
-
-
-if __name__ == "__main__":
-    asyncio.run(create_invoice())
-
-
+        print(invoice.invoice_id)
+        print(invoice.qPay_shortUrl)
 ```
 
-Run with fastapi.
-
-`fastapi dev main.py`
-
-### Sync client
-
-There is also sync flavour of the client which you can simply use as follows. All the implementation in Async client is also in the Sync client.
+### Sync клиент
 
 ```python
-from qpay_client.v2 import QPayClientSync
+from decimal import Decimal
 
-client = QPayClientSync()
+from qpay_client.v2 import QPayClient, QPaySettings
+from qpay_client.v2.schemas.schemas import InvoiceCreateSimpleRequest
 
-...
+settings = QPaySettings.sandbox()
+
+with QPayClient(settings=settings) as client:
+    invoice = client.invoice_create(
+        InvoiceCreateSimpleRequest(
+            sender_invoice_no="ORDER-1002",
+            invoice_receiver_code="terminal",
+            invoice_description="Sync туршилтын нэхэмжлэх",
+            amount=Decimal("2500"),
+            callback_url="https://example.com/qpay/callback?payment_id=ORDER-1002",
+        )
+    )
+
+    print(invoice.invoice_id)
 ```
 
-## License
+## Тохиргоо
+
+### Sandbox
+
+```python
+from qpay_client.v2 import QPaySettings
+
+settings = QPaySettings.sandbox()
+```
+
+### Production
+
+```python
+from qpay_client.v2 import QPaySettings
+
+settings = QPaySettings.production(
+    username="your-merchant-username",
+    password="your-merchant-password",
+    invoice_code="YOUR_INVOICE_CODE",
+)
+```
+
+### Retry болон delay тохируулах
+
+```python
+settings = QPaySettings.sandbox(
+    client_retries=2,
+    client_delay=0.25,
+    client_jitter=0.1,
+    payment_check_retries=8,
+    payment_check_delay=0.5,
+    payment_check_jitter=0.2,
+)
+```
+
+## Төлбөр шалгах жишээ
+
+```python
+from qpay_client.v2.schemas.enums import ObjectType
+from qpay_client.v2.schemas.schemas import Offset, PaymentCheckRequest
+
+check_request = PaymentCheckRequest(
+    object_type=ObjectType.invoice,
+    object_id="YOUR_INVOICE_ID",
+    offset=Offset(page_number=1, page_limit=100),
+)
+
+result = await client.payment_check(check_request)
+
+if result.count > 0:
+    print("Төлбөр олдлоо")
+```
+
+## FastAPI callback урсгал
+
+`examples/quickstart.py` файлд callback endpoint-тэй энгийн async жишээ бий.
+
+Үндсэн санаа нь:
+
+1. Invoice үүсгэнэ
+2. `invoice_id`-г өөрийн storage-д хадгална
+3. QPay callback ирэх үед `payment_check` ашиглан төлбөрийг шалгана
+4. Амжилттай боловсруулсны дараа `SUCCESS` буцаана
+
+Жишээ файлыг ажиллуулах:
+
+```bash
+fastapi dev examples/quickstart.py
+```
+
+QPay callback endpoint-ийн хариу амжилттай байх үед HTTP 200 болон `SUCCESS` буцаах нь чухал.
+
+## Импортын зөвлөмж
+
+Клиент болон тохиргоог `qpay_client.v2`-оос импортлоорой:
+
+```python
+from qpay_client.v2 import AsyncQPayClient, QPayClient, QPaySettings, QPayError
+```
+
+Schema болон enum-уудыг дараах модулиудаас импортлоно:
+
+```python
+from qpay_client.v2.schemas.enums import ObjectType
+from qpay_client.v2.schemas.schemas import InvoiceCreateSimpleRequest, Offset, PaymentCheckRequest
+```
+
+## Дэмжигддэг endpoint-ууд
+
+### Authentication
+
+- `token`
+- `refresh`
+
+### Invoice
+
+- `invoice_get`
+- `invoice_create`
+- `invoice_cancel`
+
+### Payment
+
+- `payment_get`
+- `payment_list`
+- `payment_check`
+- `payment_cancel`
+- `payment_refund`
+
+### Ebarimt
+
+- `ebarimt_get`
+- `ebarimt_create`
+
+### Subscription
+
+- `subscription_get`
+- `subscription_cancel`
+
+## Анхаарах зүйлс
+
+- `QPaySettings()`-ийг хоосноор нь дуудахгүй. `sandbox()` эсвэл `production()` factory ашиглана.
+- Public endpoint-ууд auth-аа өөрсдөө шалгадаг тул request бүрийн өмнө токенээ гараар шинэчлэх шаардлагагүй.
+- `payment_check` polling хийж болох тул timeout болон retry тохиргоогоо өөрийн хэрэглээнд тааруулж сонгоно.
+- Production credential-ээ репод шууд хадгалахгүй байхыг зөвлөе.
+
+## Лиценз
 
 MIT License

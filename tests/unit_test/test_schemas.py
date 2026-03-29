@@ -161,6 +161,26 @@ def test_invoice_create_simple_request_positive_amount_and_bounds():
         )
 
 
+def test_invoice_create_requests_allow_omitting_invoice_code():
+    simple = InvoiceCreateSimpleRequest(
+        sender_invoice_no="INV-2",
+        invoice_receiver_code="terminal",
+        invoice_description="desc",
+        amount=Decimal("100.00"),
+        callback_url="https://example.com/cb",
+    )
+    full = InvoiceCreateRequest(
+        sender_invoice_no="S-0",
+        invoice_receiver_code="terminal",
+        amount=Decimal("10.0"),
+        callback_url="https://ex.com",
+        invoice_description="hello",
+    )
+
+    assert simple.invoice_code is None
+    assert full.invoice_code is None
+
+
 def test_invoice_create_request_minimal_and_fullish():
     minimal = InvoiceCreateRequest(
         invoice_code="TEST_INVOICE",
