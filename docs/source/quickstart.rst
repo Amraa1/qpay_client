@@ -1,134 +1,117 @@
-Quickstart — Хурдан эхлэл
-=========================
+Хурдан эхлэл
+============
 
 Суулгах
---------
+-------
 
-Эхлээд шаардлагатай багцуудыг суулгана. `qpay-client` багц болон серверийн жишээг ажиллуулахад шаардлагатай `fastapi` болон `uvicorn`-ыг суулгаарай:
+``qpay-client``-ийг өөрийн ашиглаж буй package manager-аар суулгана.
 
 .. code-block:: bash
 
-    python -m venv .venv
-    source .venv/bin/activate      # Windows: .venv\Scripts\activate
-    pip install --upgrade pip
-    pip install qpay-client fastapi uvicorn
+    pip install qpay-client
 
-Жишээ код (async клиент)
-------------------------
+эсвэл
 
-Доорх жишээ нь `examples/quickstart.py` файлд байрлуулсан, асинхрон клиент ашигласан энгийн пример юм. Энэ жишээ нь:
-- QPay-д invoice үүсгэж qPay-ийн богино холбоосыг хэвлэх,
-- callback замаар төлбөрийн төлөвийг шалгах талаар харуулж байна.
+.. code-block:: bash
+
+    uv add qpay-client
+
+Async клиентээр эхлэх
+---------------------
+
+Асинхрон орчинд ``AsyncQPayClient`` ашиглана.
 
 .. code-block:: python
 
-    import asyncio
     from decimal import Decimal
 
-    from fastapi import FastAPI, status
+    from qpay_client.v2 import AsyncQPayClient, QPaySettings
+    from qpay_client.v2.schemas.schemas import InvoiceCreateSimpleRequest
 
-    from qpay_client.v2 import QPayClient, QPaySettings
-    from qpay_client.v2.enums import ObjectType
-    from qpay_client.v2.schemas import InvoiceCreateSimpleRequest, Offset, PaymentCheckRequest
+    settings = QPaySettings.sandbox()
+    client = AsyncQPayClient(settings=settings)
 
-    # Qpay client settings
-    settings = QPaySettings()
-
-    # Init async client
-    client = QPayClient(settings=settings)
-
-    # init FastAPI app
-    app = FastAPI()
-
-    # Just a dummy db
-    payment_database = {}
-
-
-    async def create_invoice():
-        response = await client.invoice_create(
+    async def main():
+        invoice = await client.invoice_create(
             InvoiceCreateSimpleRequest(
-                invoice_code="TEST_INVOICE",
-                sender_invoice_no="1234567",
+                sender_invoice_no="ORDER-1001",
                 invoice_receiver_code="terminal",
-                invoice_description="test",
-                sender_branch_code="SALBAR1",
-                amount=Decimal(1500),
-                callback_url="https://api.your-domain.mn/payments?payment_id=1234567",
+                invoice_description="Туршилтын нэхэмжлэх",
+                amount=Decimal("1500"),
+                callback_url="https://example.com/qpay/callback?payment_id=ORDER-1001",
             )
         )
 
-        # keep the qpay invoice_id in database, used for checking payment later!
-        payment_database["1234567"] = {
-            "id": "1234567",
-            "invoice_id": response.invoice_id,
-            "amount": Decimal(1500),
-        }
+        print(invoice.invoice_id)
+        print(invoice.qPay_shortUrl)
 
-        # Showing QPay invoice to the user ...
-        print(response.qPay_shortUrl)
+Sync клиентээр эхлэх
+--------------------
 
-
-    # You define the uri and query/param of your callback
-    # Your callback API must return
-    #   Response(status_code=200, body="SUCCESS")
-    @app.get("/payments", status_code=status.HTTP_200_OK)
-    async def qpay_callback(payment_id: str):
-        data = payment_database.get(payment_id)
-        if not data:
-            raise ValueError("Payment not found")
-        invoice_id = str(data["invoice_id"])
-        response = await client.payment_check(
-            PaymentCheckRequest(
-                object_type=ObjectType.invoice, object_id=invoice_id, offset=Offset(page_number=1, page_limit=100)
-            )
-        )
-
-        # do something with payment ...
-
-        print(response)
-
-        # This is important !
-        return "SUCCESS"
-
-
-    if __name__ == "__main__":
-        asyncio.run(create_invoice())
-
-
-Ажлуулах заавар
-----------------
-
-1. **Кодын зохион байгуулалт (зөвлөмж):** Жишээ файлыг сервер болон invoice үүсгэх логикыг зэрэг импорт хийх үед автоматаар ажиллахгүй болгохын тулд `asyncio.run(create_invoice())`-г файлын доод талд дараах байдлаар хамгаалж бичээрэй:
+Синхрон скрипт, background job, cron зэрэгт ``QPayClient`` ашиглахад илүү тохиромжтой.
 
 .. code-block:: python
 
-    if __name__ == "__main__":
-        asyncio.run(create_invoice())
+    from decimal import Decimal
 
-   Ингэснээр та файлыг серверээр ажиллуулах үед (`uvicorn examples.quickstart:app`) `create_invoice()` автоматаар ажиллахгүй байна.
+    from qpay_client.v2 import QPayClient, QPaySettings
+    from qpay_client.v2.schemas.schemas import InvoiceCreateSimpleRequest
 
-2. **Invoice үүсгэх (тест):** Хэрэв та зөвхөн invoice үүсгэхийг хүсвэл:
+    settings = QPaySettings.sandbox()
 
-.. code-block:: bash
+    with QPayClient(settings=settings) as client:
+        invoice = client.invoice_create(
+            InvoiceCreateSimpleRequest(
+                sender_invoice_no="ORDER-1002",
+                invoice_receiver_code="terminal",
+                invoice_description="Sync туршилтын нэхэмжлэх",
+                amount=Decimal("2500"),
+                callback_url="https://example.com/qpay/callback?payment_id=ORDER-1002",
+            )
+        )
 
-    python examples/quickstart.py
+        print(invoice.invoice_id)
 
-   (дээш заасан `if __name__ == "__main__":` тодорхойлогдсон бол энэ нь зөв ажиллана)
+Төлбөр шалгах жишээ
+-------------------
 
-3. **Callback хүлээн авах (локал сервер):** QPay-ээс ирэх callback-уудыг хүлээн авахын тулд FastAPI апп-ыг ажиллуулна:
+``payment_check`` endpoint нь invoice-ийн төлбөр орж ирсэн эсэхийг шалгахад түгээмэл ашиглагдана.
 
-.. code-block:: bash
+.. code-block:: python
 
-    uvicorn examples.quickstart:app --reload --host 0.0.0.0 --port 8000
+    from qpay_client.v2.schemas.enums import ObjectType
+    from qpay_client.v2.schemas.schemas import Offset, PaymentCheckRequest
 
-   Харин хэрвээ та локал машинаар QPay-аас ирэх webhook-ийг шалгах бол `ngrok` зэрэг хэрэгслээр олон нийтийн URL үүсгэн callback URL-ээ түүнд зааж болно.
+    check_request = PaymentCheckRequest(
+        object_type=ObjectType.invoice,
+        object_id="YOUR_INVOICE_ID",
+        offset=Offset(page_number=1, page_limit=100),
+    )
 
-Чухал тайлбар, анхааруулга
--------------------------
+    result = await client.payment_check(check_request)
 
-- **Sandbox vs Production:** Жишээнд `is_sandbox=True` гэж тохируулсан. Бүтээгдэхүүнд шилжихэд `is_sandbox=False` болгох бөгөөд бодит `username`/`password` ашиглана. Бүтээгдэхүүний түлхүүрүүдээ нууцалж, VCS-д ил гаргахгүй байхыг анхаарна уу (орчуулах: `.env` эсвэл secret manager ашиглах).
-- **Callback хариу:** QPay-ийн webhook нь амжилттай боловсруулсан тохиолдолд HTTP 200 болон биед `SUCCESS` мессеж (эсвэл таны QPay тохиргоонд заасан хариу) хүлээн авах хэрэгтэй. Жишээ дээр `return "SUCCESS"` байна.
-- **Тест ба лог:** Жишээ нь `payment_database` нь дэмийн (in-memory) сан. Үйлдвэрийн орчинд өгөгдлийг тогтмол хадгалах (DB) тохиргоог ашиглана. Мөн лог бичих тохиргоог `logging` модуль ашиглан тохируулж, алдааны нөхцөлд тохиромжтой retry / error handling хийхийг зөвлөж байна.
-- **Зөвлөмж:** Серверийг ажиллуулахдаа `create_invoice()`-г хост старт дээр автоматаар дуудаж invoice үүсгэхийг хүсэж байвал тус функцийг тусад нь CLI скрипт эсвэл background task хэлбэрээр зохион байгуулж, импорт үед биелэхгүй байхыг баталгаажуул.
+    if result.count > 0:
+        print("Төлбөр олдлоо")
+
+Production тохиргоо
+-------------------
+
+Production орчинд өөрийн merchant credential-ийг ашиглана.
+
+.. code-block:: python
+
+    settings = QPaySettings.production(
+        username="your-merchant-username",
+        password="your-merchant-password",
+        invoice_code="YOUR_INVOICE_CODE",
+    )
+
+Анхаарах зүйлс
+--------------
+
+- ``QPaySettings()`` нь шууд default credential үүсгэдэггүй. ``sandbox()`` эсвэл ``production()`` factory ашиглана.
+- ``invoice_create`` дээр request дотор ``invoice_code`` өгөхгүй орхивол ``settings.invoice_code`` автоматаар ашиглагдана.
+- Public API endpoint-ууд auth-аа өөрсдөө шалгадаг тул request бүрийн өмнө токен гараар шинэчлэх шаардлагагүй.
+- ``payment_check`` нь тохиргооны дагуу polling хийж болох тул ``payment_check_retries``-ийг өөрийн хэрэгцээнд тааруулж тохируулна.
 
 

@@ -183,7 +183,7 @@ class QPayClient(BaseClient):
             "POST",
             "/invoice",
             headers=self.headers(),
-            json=create_invoice_request.model_dump(by_alias=True, exclude_none=True, mode="json"),
+            json=self._invoice_create_payload(create_invoice_request),
         )
 
         data = InvoiceCreateResponse.model_validate(response.json())

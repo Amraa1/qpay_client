@@ -134,7 +134,7 @@ class SenderStaffData(BaseModel):
 class InvoiceCreateSimpleRequest(BaseModel):
     """Create simple invoice."""
 
-    invoice_code: str = Field(examples=["TEST_INVOICE"], max_length=45)
+    invoice_code: Optional[str] = Field(default=None, examples=["TEST_INVOICE"], max_length=45)
     sender_invoice_no: str = Field(examples=["123"], max_length=45)
     invoice_receiver_code: str = Field(max_length=45)
     invoice_description: str = Field(max_length=255)
@@ -146,7 +146,7 @@ class InvoiceCreateSimpleRequest(BaseModel):
 class InvoiceCreateRequest(BaseModel):
     """Create full invoice."""
 
-    invoice_code: str = Field(examples=["TEST_INVOICE"], max_length=45)
+    invoice_code: Optional[str] = Field(default=None, examples=["TEST_INVOICE"], max_length=45)
     sender_invoice_no: str = Field(max_length=45)
     invoice_receiver_code: str = Field(max_length=45)
     invoice_description: str = Field(max_length=255)

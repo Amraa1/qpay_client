@@ -6,10 +6,10 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "qpay_client"
+project = "qpay-client"
 copyright = "2025, Amarsanaa Ganbaatar"
 author = "Amarsanaa Ganbaatar"
-release = "0.3.2"
+release = "1.0.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -24,6 +24,7 @@ templates_path = ["_templates"]
 exclude_patterns = []
 
 language = "mn"
+autodoc_member_order = "bysource"
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

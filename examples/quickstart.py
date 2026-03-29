@@ -3,15 +3,15 @@ from decimal import Decimal
 
 from fastapi import FastAPI, status
 
-from qpay_client.v2 import QPayClient, QPaySettings
+from qpay_client.v2 import AsyncQPayClient, QPaySettings
 from qpay_client.v2.schemas.enums import ObjectType
 from qpay_client.v2.schemas.schemas import InvoiceCreateSimpleRequest, Offset, PaymentCheckRequest
 
-# Qpay client settings
-settings = QPaySettings()
+# QPay client settings
+settings = QPaySettings.sandbox()
 
 # Init async client
-client = QPayClient(settings=settings)
+client = AsyncQPayClient(settings=settings)
 
 # init FastAPI app
 app = FastAPI()
@@ -23,11 +23,9 @@ payment_database = {}
 async def create_invoice():
     response = await client.invoice_create(
         InvoiceCreateSimpleRequest(
-            invoice_code="TEST_INVOICE",
             sender_invoice_no="1234567",
             invoice_receiver_code="terminal",
             invoice_description="test",
-            sender_branch_code="SALBAR1",
             amount=Decimal(1500),
             callback_url="https://api.your-domain.mn/payments?payment_id=1234567",
         )

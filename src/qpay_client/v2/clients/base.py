@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 from httpx import Headers
+from pydantic import BaseModel
 
 from ..auth import QpayAuthState
 from ..settings import QPaySettings
@@ -93,6 +94,12 @@ class BaseClient(ABC):
         if self.is_authenticated:
             header.update({"Authorization": f"Bearer {self.token}"})
         return header
+
+    def _invoice_create_payload(self, request_model: BaseModel) -> dict:
+        """Build invoice-create payload and default invoice_code from settings when omitted."""
+        payload = request_model.model_dump(by_alias=True, exclude_none=True, mode="json")
+        payload.setdefault("invoice_code", self._settings.invoice_code)
+        return payload
 
     @property
     @abstractmethod

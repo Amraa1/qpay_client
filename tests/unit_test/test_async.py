@@ -6,7 +6,7 @@ from httpx import Response
 # Adjust the import path to match your project layout
 from qpay_client.v2.clients.async_client import AsyncQPayClient
 from qpay_client.v2.schemas.enums import EbarimtReceiverType, InvoiceStatus, ObjectType
-from qpay_client.v2.schemas.schemas import Offset
+from qpay_client.v2.schemas.schemas import InvoiceCreateSimpleRequest, Offset
 from qpay_client.v2.settings import QPaySettings
 
 
@@ -178,6 +178,67 @@ async def test_headers_include_bearer_token_after_auth(client, settings):
     # Check last request headers; respx keeps them on the call
     auth = route.calls.last.request.headers.get("Authorization")
     assert auth == "Bearer tok_HDR"
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_invoice_create_defaults_invoice_code_from_settings(client, settings):
+    respx.post(f"{settings.base_url}/auth/token").mock(
+        return_value=Response(
+            200,
+            json={
+                "access_token": "tok_AAA",
+                "refresh_token": "ref_AAA",
+                "expires_in": 3600,
+                "refresh_expires_in": 7200,
+                "token_type": "Bearer",
+                "scope": "session",
+                "not-before-policy": "1",
+                "session_state": "1",
+            },
+        )
+    )
+    respx.post(f"{settings.base_url}/auth/refresh").mock(
+        return_value=Response(
+            200,
+            json={
+                "access_token": "tok_AAA",
+                "refresh_token": "ref_AAA",
+                "expires_in": 3600,
+                "refresh_expires_in": 7200,
+                "token_type": "Bearer",
+                "scope": "session",
+                "not-before-policy": "1",
+                "session_state": "1",
+            },
+        )
+    )
+
+    route = respx.post(f"{settings.base_url}/invoice").mock(
+        return_value=Response(
+            200,
+            json={
+                "invoice_id": "INV-UUID",
+                "qr_text": "QRDATA",
+                "qr_image": "data:image/png;base64,xxx",
+                "qPay_shortUrl": "https://qpay.mn/s/abc",
+                "urls": [{"name": "App", "description": "open", "logo": "l", "link": "https://l"}],
+            },
+        )
+    )
+
+    await client.invoice_create(
+        InvoiceCreateSimpleRequest(
+            sender_invoice_no="INV-NEW",
+            invoice_receiver_code="terminal",
+            invoice_description="desc",
+            amount="100.00",
+            callback_url="https://example.com/callback",
+        )
+    )
+
+    assert route.called
+    assert route.calls.last.request.read().decode().find(settings.invoice_code) >= 0
 
 
 @pytest.mark.asyncio
