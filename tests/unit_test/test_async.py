@@ -4,10 +4,10 @@ from httpx import Response
 
 # Import your client + settings from your package
 # Adjust the import path to match your project layout
-from qpay_client.v2.client import QPayClient
-from qpay_client.v2.enums import EbarimtReceiverType, InvoiceStatus, ObjectType
-from qpay_client.v2.schemas import Offset
-from qpay_client.v2.settings import QPaySettings, SecretStr
+from qpay_client.v2.clients.async_client import AsyncQPayClient
+from qpay_client.v2.schemas.enums import EbarimtReceiverType, InvoiceStatus, ObjectType
+from qpay_client.v2.schemas.schemas import Offset
+from qpay_client.v2.settings import QPaySettings
 
 
 class FakeAuthState:
@@ -47,23 +47,19 @@ class FakeAuthState:
 
 @pytest.fixture
 def settings():
-    # Keep retries small and delays irrelevant for fast tests
-    return QPaySettings(
-        sandbox=True,
+    return QPaySettings.sandbox(
         client_retries=1,
         client_delay=0.0,
         client_jitter=0.0,
         payment_check_retries=1,
         payment_check_delay=0.0,
         payment_check_jitter=0.0,
-        username="user",
-        password=SecretStr("pass"),  # your settings likely wrap this in a SecretStr
     )
 
 
 @pytest.fixture
 def client(settings, monkeypatch):
-    c = QPayClient(settings=settings)
+    c = AsyncQPayClient(settings=settings)
 
     # Plug in fake auth state so we can control expiry/updates
     fake = FakeAuthState()
@@ -151,6 +147,8 @@ async def test_headers_include_bearer_token_after_auth(client, settings):
             },
         )
     )
+
+    await client.authenticate()
 
     # Then call any endpoint and inspect the Authorization header on the request
     route = respx.get(f"{settings.base_url}/invoice/INV123").mock(
@@ -429,7 +427,7 @@ async def test_payment_check_polls_until_count_gt_zero(client, settings):
         ]
     )
 
-    from qpay_client.v2.schemas import PaymentCheckRequest  # adjust import
+    from qpay_client.v2.schemas.schemas import PaymentCheckRequest  # adjust import
 
     req = PaymentCheckRequest(
         object_type=ObjectType.invoice, object_id="912213777662363", offset=Offset(page_limit=100, page_number=1)
@@ -513,7 +511,7 @@ async def test_ebarimt_create_parses_response(client, settings):
         )
     )
 
-    from qpay_client.v2.schemas import EbarimtCreateRequest  # adjust import
+    from qpay_client.v2.schemas.schemas import EbarimtCreateRequest  # adjust import
 
     req = EbarimtCreateRequest(
         payment_id="1234",

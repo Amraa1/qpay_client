@@ -11,10 +11,12 @@ from pydantic import ValidationError
 # ---- Project imports (adjust paths/namespaces to your package layout) ----
 # from qpay_client import QPayClient   # if your client is exported at package root
 from qpay_client.v2 import (
-    QPayClient,  # fallback if you keep v2 structure
+    AsyncQPayClient,
+    QPayError,
     QPaySettings,
 )
-from qpay_client.v2.schemas import (
+from qpay_client.v2.defaults import SANDBOX_INVOICE_CODE, SANDBOX_URL
+from qpay_client.v2.schemas.schemas import (
     Address,
     InvoiceCreateRequest,
     InvoiceCreateResponse,
@@ -30,10 +32,13 @@ from qpay_client.v2.schemas import (
 )
 
 # If your SubscriptionIntervalType lives elsewhere, import it accordingly.
-from qpay_client.v2.types import HttpUrlStr, SubscriptionIntervalType
+from qpay_client.v2.schemas.types import HttpUrlStr, SubscriptionIntervalType
 
 SANDBOX_USERNAME = os.environ.get("QPAY_USERNAME", "TEST_MERCHANT")
 SANDBOX_PASSWORD = os.environ.get("QPAY_PASSWORD", "123456")
+RUN_LIVE = os.environ.get("QPAY_RUN_LIVE_TESTS", "0") == "1"
+skip_live = pytest.mark.skipif(not RUN_LIVE, reason="Set QPAY_RUN_LIVE_TESTS=1 to run live QPay sandbox tests.")
+integration = pytest.mark.integration
 
 # -------------------------------------------------------------------------
 # Helpers / Fixtures
@@ -218,13 +223,17 @@ invoice_list = [
 ]
 
 
-async def _new_client() -> QPayClient:
+async def _new_client() -> AsyncQPayClient:
     # test client settings
     settings = QPaySettings(
+        username=SANDBOX_USERNAME,
+        password=SANDBOX_PASSWORD,
+        invoice_code=SANDBOX_INVOICE_CODE,
+        base_url=SANDBOX_URL,
         client_retries=0,
         payment_check_retries=0,
     )
-    return QPayClient(settings=settings)
+    return AsyncQPayClient(settings=settings)
 
 
 def _unique_suffix() -> str:
@@ -345,6 +354,8 @@ def test_allow_subscribe_false_does_not_require_subscription_fields():
 # -------------------------------------------------------------------------
 
 
+@integration
+@skip_live
 @pytest.mark.asyncio
 async def test_create_subscription_invoice_success():
     """Happy-path: create a subscription invoice and assert the subscription object,deeplinks, and essentials exist in the response."""
@@ -383,6 +394,8 @@ async def test_create_subscription_invoice_success():
         assert dl.name and dl.link, f"Deeplink missing required fields: {dl}"
 
 
+@integration
+@skip_live
 @pytest.mark.asyncio
 async def test_create_subscription_invoice_with_custom_amount_and_weekly_interval():
     """Variation: different amount and interval (weekly)."""
@@ -400,6 +413,8 @@ async def test_create_subscription_invoice_with_custom_amount_and_weekly_interva
     assert Decimal("2999")  # semantic check only; QPay total is derived by server, so we mainly assert success.
 
 
+@integration
+@skip_live
 @pytest.mark.asyncio
 async def test_create_subscription_invoice_rejects_missing_lines_server_side():
     """
@@ -418,25 +433,18 @@ async def test_create_subscription_invoice_rejects_missing_lines_server_side():
     # Send via the client's private request method to simulate server reaction.
     # NOTE: this relies on your client's internal API; adjust if needed.
     # If you want to keep public API only, you can skip this test.
-    try:
-        response = await client._request("POST", "/invoice", headers=await client._headers(), json=tampered)
-    except Exception as e:
-        # A transport exception also proves server rejected the malformed body
-        pytest.skip(f"Low-level client access not available or server blocked: {e}")
-        return
+    with pytest.raises(QPayError) as exc_info:
+        await client._request("POST", "/invoice", headers=client.headers(), json=tampered)
 
-    # Expect a 4xx from server. If your _request raises on 4xx, adapt assertions.
-    # Here we assume _request returns a raw Response-like object on success.
-    print(response)
-    status = getattr(response, "status_code", None)
-    body = getattr(response, "json", lambda: {})()
-    assert status and 200 <= status < 300, f"Expected 4xx on missing 'lines'; got {status}, body={body}"
+    assert 400 <= exc_info.value.status_code < 500
 
 
+@integration
+@skip_live
 @pytest.mark.asyncio
 async def test_create_normal_invoice_when_allow_subscribe_false():
     """Ensure a non-subscription invoice does not include subscription object."""
-    client: QPayClient = await _new_client()
+    client: AsyncQPayClient = await _new_client()
     payload = _valid_subscription_payload()
     payload["allow_subscribe"] = False
     payload.pop("subscription_interval", None)

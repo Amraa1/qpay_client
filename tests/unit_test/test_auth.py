@@ -2,7 +2,7 @@ import pytest
 
 from qpay_client.v2.auth import QpayAuthState, _normalize_to_capital
 from qpay_client.v2.error import AuthError
-from qpay_client.v2.schemas import TokenResponse
+from qpay_client.v2.schemas.schemas import TokenResponse
 
 
 def test_normalize_to_capital():
@@ -40,22 +40,22 @@ def test_is_access_and_refresh_expired_with_default_and_custom_leeway(monkeypatc
     state = QpayAuthState()
 
     # With expiry soon (now + 30) and default leeway 60 -> considered expired
-    state.access_token_expiry = now + 30
+    state.access_token_expiry_at = now + 30
     assert state.is_access_expired() is True
 
     # With expiry later (now + 120) and default leeway 60 -> not expired
-    state.access_token_expiry = now + 120
+    state.access_token_expiry_at = now + 120
     assert state.is_access_expired() is False
 
     # Custom leeway can change result
-    state.access_token_expiry = now + 65
+    state.access_token_expiry_at = now + 65
     assert state.is_access_expired(leeway=60) is False
     assert state.is_access_expired(leeway=70) is True
 
     # Same checks for refresh token
-    state.refresh_token_expiry = now + 30
+    state.refresh_token_expiry_at = now + 30
     assert state.is_refresh_expired() is True
-    state.refresh_token_expiry = now + 120
+    state.refresh_token_expiry_at = now + 120
     assert state.is_refresh_expired() is False
 
 
@@ -76,9 +76,9 @@ def test_update_populates_fields_from_token_response():
 
     assert state.token_type == "Bearer"
     assert state.access_token == "acc_tok"
-    assert state.access_token_expiry == 1234
+    assert state.access_token_expiry_at == 1234
     assert state.refresh_token == "ref_tok"
-    assert state.refresh_token_expiry == 2345
+    assert state.refresh_token_expiry_at == 2345
     assert state.scope == "read write"
     assert state.not_before_policy == "0"
     assert state.session_state == "sess123"

@@ -2,10 +2,9 @@ import asyncio
 import logging
 from typing import Optional, Union
 
-from httpx import AsyncClient, BasicAuth, Headers, Limits, Response, Timeout
+from httpx import AsyncClient, BasicAuth, Response
 
-from .auth import QpayAuthState
-from .schemas import (
+from ..schemas.schemas import (
     Ebarimt,
     EbarimtCreateRequest,
     InvoiceCreateRequest,
@@ -22,11 +21,14 @@ from .schemas import (
     SubscriptionGetResponse,
     TokenResponse,
 )
-from .settings import QPaySettings
-from .utils import exponential_backoff, handle_error
+from ..settings import QPaySettings
+from ..transport import AsyncTransport
+from ..utils import exponential_backoff
+from .base import BaseClient
+from .decorators import async_auth_required
 
 
-class QPayClient:
+class AsyncQPayClient(BaseClient):
     """
     Asynchronous client for QPay v2 API.
 
@@ -37,100 +39,29 @@ class QPayClient:
 
     def __init__(
         self,
+        settings: QPaySettings,
         *,
         client: Optional[AsyncClient] = None,
-        settings: Optional[QPaySettings] = None,
-        timeout: Optional[Timeout] = None,
-        limits: Optional[Limits] = None,
         logger: Optional[logging.Logger] = None,
-        log_level: Optional[Union[int, str]] = None,
     ):
         """
-        Initialize QPayClient object.
+        Initialize AsyncQPayClient object.
 
         Args:
-            client (Optional[httpx.AsyncClient]): Optional httpx async client.
-            settings (Optional[Settings]): Optional Settings instance.
-            timeout (Optional[httpx.Timeout]): Optional httpx Timeout configuration
-                for requests.
-            limits: (Optional[httpx.Limits]): Optional limits set on client.
-            logger (logging.Logger): Logger instance.
-            log_level (int): Logging level for the logger.
+            settings (Settings): QPay client settings.
+            client (Optional[httpx.Client]): Optional custom httpx client.
+            logger (Optional[logging.Logger]): QPay client logger.
 
         """
-        self._id = id(self)
-        self._auth_state = QpayAuthState()
-        self._settings = settings or QPaySettings()
-
-        # If base_url is supplied use that else use settings
-        self._base_url = self._settings.base_url
-
-        self._is_sandbox = self._settings.sandbox
-        self._token_leeway = self._settings.token_leeway
-
-        # Logging config
-        self._logger = logger or logging.getLogger(f"qpay.{self._id}")
-        self._logger.setLevel(log_level or logging.INFO)
-
-        # Default timeout if timeout is None
-        if timeout is None:
-            timeout = Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0)
-
-        if limits is None:
-            # Set the same as httpx DEFAULT_LIMITS
-            limits = Limits(max_connections=100, max_keepalive_connections=20)
-
-        # Async connections to qpay server
-        if client:
-            self._client = client
-        else:
-            self._client = AsyncClient(base_url=self._base_url, timeout=timeout, limits=limits)
+        super().__init__(settings, logger=logger)
+        self._transport = AsyncTransport(settings=settings, logger=self._logger, client=client)
+        self._client = self._transport.client
 
         self._async_lock = asyncio.Lock()
 
-        self._logger.debug(
-            "QPayClient initialized",
-            extra={"base_url": self._base_url, "sandbox": self._is_sandbox, "leeway": self._token_leeway},
-        )
-
-    @property
-    def is_authenticated(self) -> bool:
-        """Returns True of authenticated and not expired."""
-        return self._auth_state.has_access_token() and not self.is_access_expired
-
     @property
     def is_closed(self) -> bool:
-        """Returns True of connection is closed."""
         return self._client.is_closed
-
-    @property
-    def is_access_expired(self) -> bool:
-        """Returns True if access token is expired."""
-        return self._auth_state.is_access_expired(leeway=self._token_leeway)
-
-    @property
-    def is_refresh_expired(self) -> bool:
-        """Returns True if refresh token is expired."""
-        return self._auth_state.is_refresh_expired(leeway=self._token_leeway)
-
-    @property
-    def is_sandbox(self) -> bool:
-        """Returns True if client is in sandbox mode."""
-        return self._is_sandbox
-
-    @property
-    def token(self) -> str:
-        """Get client token."""
-        return self._auth_state.get_access_token()
-
-    @property
-    def base_url(self) -> str:
-        """Get base url."""
-        return self._base_url
-
-    @property
-    def auth_state(self) -> QpayAuthState:
-        return self._auth_state
 
     async def __aenter__(self):
         # client authenticates early here if not authenticated
@@ -143,8 +74,7 @@ class QPayClient:
 
     async def close(self):
         """Close connection."""
-        if not self.is_closed:
-            await self._client.aclose()
+        await self._transport.close()
 
     async def authenticate(self) -> None:
         """Authenticate client."""
@@ -162,63 +92,15 @@ class QPayClient:
         url: str,
         **kwargs,
     ) -> Response:
-        """Send requests to qpay server."""
-        self._logger.debug("Request: %s %s", method, url)
-        response = await self._client.request(method, url, **kwargs)
-        self._logger.debug("Response: %s %s", response.status_code, url)
-
-        if response.status_code == 401:
-            # Fixable error
-            self._logger.info("401 received, refreshing access token")
-            await self._refresh_access_token()
-            response = await self._client.request(method, url, **kwargs)
-            self._logger.debug(
-                "Response after refresh: %s %s",
-                response.status_code,
-                url,
-            )
-
-        elif response.is_server_error:
-            # Retry for server errors
-            for attempt in range(1, self._settings.client_retries + 1):
-                self._logger.warning(
-                    "Retrying %s: %s (attempt %d/%d)",
-                    method,
-                    url,
-                    attempt,
-                    self._settings.client_retries,
-                )
-
-                # exponential backoff
-                await asyncio.sleep(
-                    exponential_backoff(
-                        self._settings.client_delay,
-                        attempt,
-                        self._settings.client_jitter,
-                    )
-                )
-
-                response = await self._client.request(method, url, **kwargs)
-                self._logger.debug("Retry %s response: %s %s", attempt, response.status_code, url)
-
-                if response.is_success:
-                    break
-
-        if response.is_error:
-            handle_error(response, self._logger)
-
-        return response
-
-    async def _headers(self):
-        """Headers needed for communication between qpay client and qpay server."""
-        return Headers(
-            {
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {await self._get_auth_token()}",
-                "User-Agent": "qpay-client",
-            }
+        return await self._transport.request(
+            method,
+            url,
+            on_unauthorized=self._refresh_access_token,
+            **kwargs,
         )
+
+    async def _send(self, method: str, url: str, **kwargs) -> Response:
+        return await self._transport._send(method, url, **kwargs)
 
     async def _authenticate(self) -> None:
         """Authenticate the client. Thread safe."""
@@ -234,12 +116,12 @@ class QPayClient:
 
     async def _authenticate_nolock(self):
         """Authenticate the client. Not thread safe."""
-        response = await self._request(
+        response = await self._send(
             "POST",
             "/auth/token",
             auth=BasicAuth(
                 username=self._settings.username,
-                password=self._settings.password.get_secret_value(),  # get password secret
+                password=self._settings.password,  # get password secret
             ),
         )
 
@@ -256,7 +138,7 @@ class QPayClient:
             return await self._authenticate_nolock()
 
         # Using refresh token
-        response = await self._request(
+        response = await self._send(
             "POST",
             "/auth/refresh",
             headers={"Authorization": self._auth_state.refresh_as_header()},
@@ -276,17 +158,19 @@ class QPayClient:
         await self.authenticate()
         return self.token
 
+    @async_auth_required
     async def invoice_get(self, invoice_id: str):
         """Get invoice by Id."""
         response = await self._request(
             "GET",
             "/invoice/" + invoice_id,
-            headers=await self._headers(),
+            headers=self.headers(),
         )
 
         data = InvoiceGetResponse.model_validate(response.json())
         return data
 
+    @async_auth_required
     async def invoice_create(
         self, create_invoice_request: Union[InvoiceCreateRequest, InvoiceCreateSimpleRequest]
     ) -> InvoiceCreateResponse:
@@ -294,13 +178,14 @@ class QPayClient:
         response = await self._request(
             "POST",
             "/invoice",
-            headers=await self._headers(),
+            headers=self.headers(),
             json=create_invoice_request.model_dump(by_alias=True, exclude_none=True, mode="json"),
         )
 
         data = InvoiceCreateResponse.model_validate(response.json())
         return data
 
+    @async_auth_required
     async def invoice_cancel(
         self,
         invoice_id: str,
@@ -309,22 +194,24 @@ class QPayClient:
         response = await self._request(
             "DELETE",
             "/invoice/" + invoice_id,
-            headers=await self._headers(),
+            headers=self.headers(),
         )
 
         return response.status_code
 
+    @async_auth_required
     async def payment_get(self, payment_id: str):
         """Send get payment requesst to qpay."""
         response = await self._request(
             "GET",
             "/payment/" + payment_id,
-            headers=await self._headers(),
+            headers=self.headers(),
         )
 
         data = PaymentGetResponse.model_validate(response.json())
         return data
 
+    @async_auth_required
     async def payment_check(
         self,
         payment_check_request: PaymentCheckRequest,
@@ -337,7 +224,7 @@ class QPayClient:
         response = await self._request(
             "POST",
             "/payment/check",
-            headers=await self._headers(),
+            headers=self.headers(),
             json=payment_check_request.model_dump(by_alias=True, exclude_none=True, mode="json"),
         )
 
@@ -362,7 +249,7 @@ class QPayClient:
             response = await self._request(
                 "POST",
                 "/payment/check",
-                headers=await self._headers(),
+                headers=self.headers(),
                 json=payment_check_request.model_dump(by_alias=True, exclude_none=True, mode="json"),
             )
 
@@ -379,6 +266,7 @@ class QPayClient:
 
         return data
 
+    @async_auth_required
     async def payment_cancel(
         self,
         payment_id: str,
@@ -388,12 +276,13 @@ class QPayClient:
         response = await self._request(
             "DELETE",
             "/payment/cancel/" + payment_id,
-            headers=await self._headers(),
+            headers=self.headers(),
             json=payment_cancel_request.model_dump(by_alias=True, exclude_none=True, mode="json"),
         )
 
         return response.status_code
 
+    @async_auth_required
     async def payment_refund(
         self,
         payment_id: str,
@@ -403,64 +292,69 @@ class QPayClient:
         response = await self._request(
             "DELETE",
             "/payment/refund/" + payment_id,
-            headers=await self._headers(),
+            headers=self.headers(),
             json=payment_refund_request.model_dump(by_alias=True, exclude_none=True, mode="json"),
         )
 
         return response.status_code
 
+    @async_auth_required
     async def payment_list(self, payment_list_request: PaymentListRequest):
         """Send list payment request."""
         response = await self._request(
             "POST",
             "/payment/list",
-            headers=await self._headers(),
+            headers=self.headers(),
             json=payment_list_request.model_dump(by_alias=True, exclude_none=True, mode="json"),
         )
 
         data = PaymentListResponse.model_validate(response.json())
         return data
 
+    @async_auth_required
     async def ebarimt_create(self, ebarimt_create_request: EbarimtCreateRequest):
         """Send create ebarimt request."""
         response = await self._request(
             "POST",
             "/ebarimt/create",
-            headers=await self._headers(),
+            headers=self.headers(),
             json=ebarimt_create_request.model_dump(by_alias=True, exclude_none=True, mode="json"),
         )
 
         data = Ebarimt.model_validate(response.json())
         return data
 
+    @async_auth_required
     async def ebarimt_get(self, barimt_id: str):
         """Send get ebarimt request."""
         response = await self._request(
             "GET",
             "/ebarimt/" + barimt_id,
-            headers=await self._headers(),
+            headers=self.headers(),
         )
 
         data = Ebarimt.model_validate(response.json())
         return data
 
+    @async_auth_required
     async def subscription_get(self, subscription_id: str):
         """Send get subscription request."""
         response = await self._request(
             "GET",
             "/subscription/" + subscription_id,
-            headers=await self._headers(),
+            headers=self.headers(),
         )
 
         data = SubscriptionGetResponse.model_validate(response.json())
         return data
 
+    @async_auth_required
     async def subscription_cancel(self, subscription_id: str):
         """Send cancel subscription request."""
         response = await self._request(
             "DELETE",
             "/subscription/" + subscription_id,
-            headers=await self._headers(),
+            headers=self.headers(),
         )
 
         return response.status_code

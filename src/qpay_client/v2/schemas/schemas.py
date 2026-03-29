@@ -28,9 +28,9 @@ class TokenResponse(BaseModel):
 
     token_type: str
     access_token: str
-    expires_in: float
+    access_expires_at: float = Field(..., alias="expires_in")  # changing the name for clarity
     refresh_token: str
-    refresh_expires_in: float
+    refresh_expires_at: float = Field(..., alias="refresh_expires_in")  # changing the name for clarity
     scope: str
     not_before_policy: str = Field(..., alias="not-before-policy")
     session_state: str
@@ -187,16 +187,14 @@ class InvoiceCreateRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_when_subcription_allowed(self) -> Self:
-        if not self.allow_subscribe:
-            return self
-        elif not self.subscription_interval or not self.subscription_webhook:
-            raise ValueError(
-                "When allow_subscription is 'True', subscription_interval and subscription_webhook must have valid values."
-            )
-        elif not self.lines:
-            raise ValueError("When allow_subscription is 'True', lines must have atleast one value.")
-        else:
-            return self
+        if self.allow_subscribe:
+            if not self.subscription_interval or not self.subscription_webhook:
+                raise ValueError(
+                    "When allow_subscription is 'True', subscription_interval and subscription_webhook must have valid values."
+                )
+            elif not self.lines:
+                raise ValueError("When allow_subscription is 'True', lines must have atleast one value.")
+        return self
 
 
 class Subscription(BaseModel):

@@ -3,12 +3,10 @@ import pytest
 import respx
 from httpx import Response
 
-from qpay_client.v2.enums import EbarimtReceiverType, InvoiceStatus, ObjectType
-from qpay_client.v2.schemas import Offset
-from qpay_client.v2.settings import QPaySettings, SecretStr
-
 # Adjust these imports to your real package paths
-from qpay_client.v2.sync_client import QPayClientSync
+from qpay_client.v2 import QPayClient, QPaySettings
+from qpay_client.v2.schemas.enums import EbarimtReceiverType, InvoiceStatus, ObjectType
+from qpay_client.v2.schemas.schemas import Offset
 
 
 class FakeAuthState:
@@ -46,27 +44,24 @@ class FakeAuthState:
 @pytest.fixture
 def settings():
     # Keep retries low and delays zero for fast unit tests
-    return QPaySettings(
-        sandbox=True,
+    return QPaySettings.sandbox(
         client_retries=1,
         client_delay=0.0,
         client_jitter=0.0,
         payment_check_retries=1,
         payment_check_delay=0.0,
         payment_check_jitter=0.0,
-        username="user",
-        password=SecretStr("pass"),
     )
 
 
 @pytest.fixture
 def client(settings, monkeypatch):
-    c = QPayClientSync(settings=settings)
+    c = QPayClient(settings=settings)
     # Inject controllable auth state
     fake = FakeAuthState()
     monkeypatch.setattr(c, "_auth_state", fake)
     # Make sleeps instant (patch where used!)
-    monkeypatch.setattr("qpay_client.v2.sync_client.time.sleep", lambda *_a, **_k: None)
+    monkeypatch.setattr("qpay_client.v2.clients.client.time.sleep", lambda *_a, **_k: None)
     return c
 
 
@@ -108,9 +103,9 @@ def wire_auth(settings):
 def test_context_manager_triggers_auth_and_closes(client, settings):
     wire_auth(settings)
 
-    with client as c:
-        assert c.is_authenticated is True
-        assert c.token == "tok_AAA"
+    with client:
+        assert client.is_authenticated is True
+        assert client.token == "tok_AAA"
 
     # Exiting context closes the underlying httpx.Client
     assert client.is_closed is True
@@ -119,6 +114,7 @@ def test_context_manager_triggers_auth_and_closes(client, settings):
 @respx.mock
 def test_headers_include_bearer_token_after_auth(client, settings):
     wire_auth(settings)
+    client.authenticate()
 
     route = respx.get(f"{settings.base_url}/invoice/INV123").mock(
         return_value=Response(
@@ -317,7 +313,7 @@ def test_payment_check_polls_until_count_gt_zero(client, settings):
         ]
     )
 
-    from qpay_client.v2.schemas import PaymentCheckRequest
+    from qpay_client.v2.schemas.schemas import PaymentCheckRequest
 
     req = PaymentCheckRequest(
         object_type=ObjectType.invoice,
@@ -375,7 +371,7 @@ def test_ebarimt_create_parses_response(client, settings):
         )
     )
 
-    from qpay_client.v2.schemas import EbarimtCreateRequest
+    from qpay_client.v2.schemas.schemas import EbarimtCreateRequest
 
     req = EbarimtCreateRequest(
         payment_id="1234",
