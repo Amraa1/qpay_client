@@ -4,7 +4,7 @@ import time
 from dataclasses import dataclass
 
 from .error import AuthError
-from .schemas.schemas import TokenResponse
+from .schemas import TokenResponse
 
 
 def _normalize_to_capital(token_type: str) -> str:

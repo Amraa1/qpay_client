@@ -43,8 +43,8 @@ class EbarimtReceiverType(str, Enum):
     company = "COMPANY"
 
 
-class BankCode(str, Enum):
-    """Bank codes provided by QPay."""
+class KnownProviderCode(str, Enum):
+    """Known QPay bank/provider codes kept as convenience constants."""
 
     bank_of_mongolia = "010000"
     capital_bank = "020000"
@@ -65,6 +65,7 @@ class BankCode(str, Enum):
     mobi_finance = "500000"
     m_bank = "390000"
     invescore = "993000"
+    monpay = "990000"
     test_bank = "100000"
 
 

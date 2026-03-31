@@ -16,7 +16,7 @@ from qpay_client.v2 import (
     QPaySettings,
 )
 from qpay_client.v2.defaults import SANDBOX_INVOICE_CODE, SANDBOX_URL
-from qpay_client.v2.schemas.schemas import (
+from qpay_client.v2.schemas import (
     Address,
     InvoiceCreateRequest,
     InvoiceCreateResponse,
@@ -32,7 +32,7 @@ from qpay_client.v2.schemas.schemas import (
 )
 
 # If your SubscriptionIntervalType lives elsewhere, import it accordingly.
-from qpay_client.v2.schemas.types import HttpUrlStr, SubscriptionIntervalType
+from qpay_client.v2.types import HttpUrlStr, SubscriptionIntervalType
 
 SANDBOX_USERNAME = os.environ.get("QPAY_USERNAME", "TEST_MERCHANT")
 SANDBOX_PASSWORD = os.environ.get("QPAY_PASSWORD", "123456")

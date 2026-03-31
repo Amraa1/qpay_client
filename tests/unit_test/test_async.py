@@ -5,8 +5,8 @@ from httpx import Response
 # Import your client + settings from your package
 # Adjust the import path to match your project layout
 from qpay_client.v2.clients.async_client import AsyncQPayClient
-from qpay_client.v2.schemas.enums import EbarimtReceiverType, InvoiceStatus, ObjectType
-from qpay_client.v2.schemas.schemas import InvoiceCreateSimpleRequest, Offset
+from qpay_client.v2.enums import EbarimtReceiverType, InvoiceStatus, ObjectType
+from qpay_client.v2.schemas import InvoiceCreateSimpleRequest, Offset
 from qpay_client.v2.settings import QPaySettings
 
 
@@ -488,7 +488,7 @@ async def test_payment_check_polls_until_count_gt_zero(client, settings):
         ]
     )
 
-    from qpay_client.v2.schemas.schemas import PaymentCheckRequest  # adjust import
+    from qpay_client.v2.schemas import PaymentCheckRequest  # adjust import
 
     req = PaymentCheckRequest(
         object_type=ObjectType.invoice, object_id="912213777662363", offset=Offset(page_limit=100, page_number=1)
@@ -572,7 +572,7 @@ async def test_ebarimt_create_parses_response(client, settings):
         )
     )
 
-    from qpay_client.v2.schemas.schemas import EbarimtCreateRequest  # adjust import
+    from qpay_client.v2.schemas import EbarimtCreateRequest  # adjust import
 
     req = EbarimtCreateRequest(
         payment_id="1234",

@@ -1,7 +1,7 @@
-from qpay_client.v2.schemas.enums import (
-    BankCode,
+from qpay_client.v2.enums import (
     Currency,
     EbarimtReceiverType,
+    KnownProviderCode,
     ObjectType,
     PaymentStatus,
     TaxType,
@@ -37,11 +37,17 @@ def test_ebarimt_receiver_type_enum():
 
 
 def test_bank_code_enum():
-    assert BankCode.bank_of_mongolia == "010000"
-    assert BankCode.capital_bank == "020000"
-    assert BankCode.khan_bank == "050000"
-    assert BankCode.golomt_bank == "150000"
-    assert BankCode.test_bank == "100000"
+    assert KnownProviderCode.bank_of_mongolia == "010000"
+    assert KnownProviderCode.capital_bank == "020000"
+    assert KnownProviderCode.khan_bank == "050000"
+    assert KnownProviderCode.golomt_bank == "150000"
+    assert KnownProviderCode.monpay == "990000"
+    assert KnownProviderCode.test_bank == "100000"
+
+
+def test_known_provider_code_aliases_bank_code():
+    assert KnownProviderCode is KnownProviderCode
+    assert KnownProviderCode.khan_bank == KnownProviderCode.khan_bank
 
 
 def test_object_type_enum():

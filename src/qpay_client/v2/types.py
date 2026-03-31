@@ -8,6 +8,7 @@ def validate_url(v: str) -> str:
 
 
 HttpUrlStr = Annotated[str, BeforeValidator(validate_url)]
+ProviderCode = Annotated[str, StringConstraints(strict=True, min_length=1)]
 SubscriptionIntervalType = Annotated[
     str, StringConstraints(min_length=2, max_length=5, pattern=r"^(?:[1-9]\d{0,3})(?:[DWM])$")
 ]

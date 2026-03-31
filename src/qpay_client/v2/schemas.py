@@ -8,7 +8,6 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing_extensions import Self
 
 from .enums import (
-    BankCode,
     Currency,
     EbarimtReceiverType,
     InvoiceStatus,
@@ -18,7 +17,7 @@ from .enums import (
     TaxType,
     TransactionType,
 )
-from .types import HttpUrlStr, SubscriptionIntervalType
+from .types import HttpUrlStr, ProviderCode, SubscriptionIntervalType
 
 
 class TokenResponse(BaseModel):
@@ -100,7 +99,9 @@ class Tax(BaseModel):
 
 
 class Account(BaseModel):
-    account_bank_code: BankCode
+    account_bank_code: ProviderCode = Field(
+        description="QPay provider code. Use BankCode/KnownProviderCode for known values when convenient."
+    )
     account_number: str = Field(max_length=100)
     account_name: str = Field(max_length=100)
     account_currency: Currency
@@ -392,8 +393,12 @@ class CardTransaction(BaseModel):
 
 
 class P2PTransaction(BaseModel):
-    transaction_bank_code: BankCode
-    account_bank_code: BankCode
+    transaction_bank_code: ProviderCode = Field(
+        description="QPay provider code. Use BankCode/KnownProviderCode for known values when convenient."
+    )
+    account_bank_code: ProviderCode = Field(
+        description="QPay provider code. Use BankCode/KnownProviderCode for known values when convenient."
+    )
     account_bank_name: str
     account_number: str
     status: str

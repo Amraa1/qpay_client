@@ -5,8 +5,8 @@ from httpx import Response
 
 # Adjust these imports to your real package paths
 from qpay_client.v2 import QPayClient, QPaySettings
-from qpay_client.v2.schemas.enums import EbarimtReceiverType, InvoiceStatus, ObjectType
-from qpay_client.v2.schemas.schemas import InvoiceCreateSimpleRequest, Offset
+from qpay_client.v2.enums import EbarimtReceiverType, InvoiceStatus, ObjectType
+from qpay_client.v2.schemas import InvoiceCreateSimpleRequest, Offset
 
 
 class FakeAuthState:
@@ -345,7 +345,7 @@ def test_payment_check_polls_until_count_gt_zero(client, settings):
         ]
     )
 
-    from qpay_client.v2.schemas.schemas import PaymentCheckRequest
+    from qpay_client.v2.schemas import PaymentCheckRequest
 
     req = PaymentCheckRequest(
         object_type=ObjectType.invoice,
@@ -403,7 +403,7 @@ def test_ebarimt_create_parses_response(client, settings):
         )
     )
 
-    from qpay_client.v2.schemas.schemas import EbarimtCreateRequest
+    from qpay_client.v2.schemas import EbarimtCreateRequest
 
     req = EbarimtCreateRequest(
         payment_id="1234",

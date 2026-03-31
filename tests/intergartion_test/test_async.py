@@ -8,8 +8,8 @@ import pytest
 
 from qpay_client.v2 import AsyncQPayClient, QPayError, QPaySettings
 from qpay_client.v2.defaults import SANDBOX_INVOICE_CODE, SANDBOX_URL
-from qpay_client.v2.schemas.enums import ObjectType
-from qpay_client.v2.schemas.schemas import (
+from qpay_client.v2.enums import ObjectType
+from qpay_client.v2.schemas import (
     InvoiceCreateSimpleRequest,
     Offset,
     PaymentCancelRequest,
@@ -160,7 +160,7 @@ async def test_payment_cancel_and_refund_fail_gracefully_for_unpaid():
         await client.payment_cancel(bogus_payment_id, PaymentCancelRequest())
 
     # payment_refund -> returns status code via client (needs a payload)
-    from qpay_client.v2.schemas.schemas import PaymentRefundRequest
+    from qpay_client.v2.schemas import PaymentRefundRequest
 
     refund_req = PaymentRefundRequest(note="test")
     with pytest.raises(QPayError):
