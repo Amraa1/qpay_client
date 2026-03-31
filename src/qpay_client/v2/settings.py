@@ -1,12 +1,20 @@
 """QPay client settings module."""
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Union
 
 from httpx import Limits, Timeout
 
-from .defaults import MERCHANT_URL, SANDBOX_INVOICE_CODE, SANDBOX_PASSWORD, SANDBOX_URL, SANDBOX_USERNAME
+from .defaults import (
+    MERCHANT_URL,
+    SANDBOX_INVOICE_CODE,
+    SANDBOX_PASSWORD,
+    SANDBOX_URL,
+    SANDBOX_USERNAME,
+    default_limits,
+    default_timeout,
+)
 
 
 @dataclass(frozen=True)
@@ -18,8 +26,8 @@ class QPaySettings:
     invoice_code: str
     base_url: str
 
-    timeout: Timeout = Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0)
-    limits: Limits = Limits(max_connections=100, max_keepalive_connections=20)
+    timeout: Timeout = field(default_factory=default_timeout)
+    limits: Limits = field(default_factory=default_limits)
     log_level: Union[int, str] = logging.INFO
 
     token_leeway: float = 60.0
