@@ -1,3 +1,5 @@
+from httpx import Limits, Timeout
+
 from qpay_client.v2.defaults import MERCHANT_URL, SANDBOX_INVOICE_CODE, SANDBOX_PASSWORD, SANDBOX_URL, SANDBOX_USERNAME
 from qpay_client.v2.settings import QPaySettings
 
@@ -60,3 +62,13 @@ def test_production_settings_use_merchant_url_and_custom_values():
     assert settings.payment_check_retries == 3
     assert settings.payment_check_delay == 0.4
     assert settings.payment_check_jitter == 0.1
+
+
+def test_settings_create_fresh_httpx_defaults_per_instance():
+    first = QPaySettings.sandbox()
+    second = QPaySettings.sandbox()
+
+    assert first.timeout is not second.timeout
+    assert first.limits is not second.limits
+    assert first.timeout == Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0)
+    assert first.limits == Limits(max_connections=100, max_keepalive_connections=20)
