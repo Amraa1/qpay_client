@@ -4,7 +4,7 @@ from typing import Optional, Union
 
 from httpx import AsyncClient, BasicAuth, Response
 
-from ..schemas.schemas import (
+from ..schemas import (
     Ebarimt,
     EbarimtCreateRequest,
     InvoiceCreateRequest,

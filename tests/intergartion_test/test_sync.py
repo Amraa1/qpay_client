@@ -9,8 +9,8 @@ import pytest
 # ---- imports from your package; adjust path if needed
 from qpay_client.v2 import QPayClient, QPayError, QPaySettings
 from qpay_client.v2.defaults import SANDBOX_URL
-from qpay_client.v2.schemas.enums import ObjectType
-from qpay_client.v2.schemas.schemas import (
+from qpay_client.v2.enums import ObjectType
+from qpay_client.v2.schemas import (
     InvoiceCreateSimpleRequest,
     Offset,
     PaymentCancelRequest,

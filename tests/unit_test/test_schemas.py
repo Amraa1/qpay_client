@@ -4,11 +4,11 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from qpay_client.v2.schemas.enums import (
-    BankCode,
+from qpay_client.v2.enums import (
     Currency,
     EbarimtReceiverType,
     InvoiceStatus,
+    KnownProviderCode,
     ObjectType,
     PaymentStatus,
     TransactionType,
@@ -16,7 +16,7 @@ from qpay_client.v2.schemas.enums import (
 
 # Import from your uploaded files' package path
 # Adjust if your project structure differs.
-from qpay_client.v2.schemas.schemas import (
+from qpay_client.v2.schemas import (
     Account,
     Address,
     CancelPaymentRequest,
@@ -113,7 +113,7 @@ def test_discount_surcharge_tax_models_and_line_and_transaction_and_account():
     s = Surcharge(description="Delivery", amount=Decimal("500"))
     t = Tax(description="VAT", amount=Decimal("50"))
     acc = Account(
-        account_bank_code=BankCode.khan_bank,
+        account_bank_code=KnownProviderCode.khan_bank,
         account_number="123456789",
         account_name="Agmarco LLC",
         account_currency=Currency.mnt,
@@ -132,6 +132,19 @@ def test_discount_surcharge_tax_models_and_line_and_transaction_and_account():
     assert ln.line_quantity == Decimal("2")
     assert tr.accounts is not None
     assert tr.accounts[0].account_currency == Currency.mnt
+
+
+def test_account_accepts_unknown_provider_code():
+    acc = Account(
+        account_bank_code="DIGIPAY",
+        account_number="123456789",
+        account_name="Acme LLC",
+        account_currency=Currency.mnt,
+        is_default=True,
+    )
+
+    assert acc.account_bank_code == "DIGIPAY"
+    assert isinstance(acc.account_bank_code, str)
 
 
 # -------------------------------------------------------
@@ -251,8 +264,8 @@ def _card_tx():
 
 def _p2p_tx():
     return P2PTransaction(
-        transaction_bank_code=BankCode.khan_bank,
-        account_bank_code=BankCode.khan_bank,
+        transaction_bank_code=KnownProviderCode.khan_bank,
+        account_bank_code=KnownProviderCode.khan_bank,
         account_bank_name="Khan",
         account_number="123",
         status="OK",
@@ -260,6 +273,22 @@ def _p2p_tx():
         currency=Currency.mnt,
         settlement_status="SETTLED",
     )
+
+
+def test_p2p_transaction_accepts_unknown_provider_codes():
+    tx = P2PTransaction(
+        transaction_bank_code="DIGIPAY",
+        account_bank_code="MONPAY",
+        account_bank_name="Monpay",
+        account_number="123",
+        status="OK",
+        amount=Decimal("50"),
+        currency=Currency.mnt,
+        settlement_status="SETTLED",
+    )
+
+    assert tx.transaction_bank_code == "DIGIPAY"
+    assert tx.account_bank_code == "MONPAY"
 
 
 def _payment_min():

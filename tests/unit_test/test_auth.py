@@ -2,7 +2,7 @@ import pytest
 
 from qpay_client.v2.auth import QpayAuthState, _normalize_to_capital
 from qpay_client.v2.error import AuthError
-from qpay_client.v2.schemas.schemas import TokenResponse
+from qpay_client.v2.schemas import TokenResponse
 
 
 def test_normalize_to_capital():

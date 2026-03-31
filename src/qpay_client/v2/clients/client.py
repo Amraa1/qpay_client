@@ -4,7 +4,7 @@ from typing import Optional, Union
 
 from httpx import BasicAuth, Client, Response
 
-from ..schemas.schemas import (
+from ..schemas import (
     EbarimtCreateRequest,
     EbarimtCreateResponse,
     EbarimtGetResponse,
