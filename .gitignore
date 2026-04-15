@@ -14,3 +14,9 @@ wheels/
 
 # docs build files
 docs/_build
+
+# Claude Code local data (memory, plans)
+.claude/
+
+# GitHub Wiki source files (pushed separately to repo.wiki.git)
+wiki/
