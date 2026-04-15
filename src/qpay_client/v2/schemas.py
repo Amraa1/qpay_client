@@ -21,15 +21,28 @@ from .types import HttpUrlStr, ProviderCode, SubscriptionIntervalType
 
 
 class TokenResponse(BaseModel):
-    """QPay Token and Refresh token response."""
+    """
+    QPay Token and Refresh token response.
+
+    Note on token expiry fields:
+        Despite being named `expires_in` and `refresh_expires_in`, the QPay v2 API
+        returns **Unix epoch timestamps** (seconds since 1970-01-01 UTC), NOT
+        relative seconds-until-expiry as defined by the OAuth 2.0 spec (RFC 6749).
+
+        These values are stored as `access_expires_at` and `refresh_expires_at` to
+        reflect their true meaning and are compared directly against `time.time()`
+        in `QpayAuthState.is_access_expired()` and `is_refresh_expired()`.
+    """
 
     model_config = ConfigDict(validate_by_alias=True)
 
     token_type: str
     access_token: str
-    access_expires_at: float = Field(..., alias="expires_in")  # changing the name for clarity
+    # QPay returns a Unix epoch timestamp here, not relative seconds (non-standard OAuth).
+    access_expires_at: float = Field(..., alias="expires_in")
     refresh_token: str
-    refresh_expires_at: float = Field(..., alias="refresh_expires_in")  # changing the name for clarity
+    # QPay returns a Unix epoch timestamp here, not relative seconds (non-standard OAuth).
+    refresh_expires_at: float = Field(..., alias="refresh_expires_in")
     scope: str
     not_before_policy: str = Field(..., alias="not-before-policy")
     session_state: str

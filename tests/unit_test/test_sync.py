@@ -60,8 +60,8 @@ def client(settings, monkeypatch):
     # Inject controllable auth state
     fake = FakeAuthState()
     monkeypatch.setattr(c, "_auth_state", fake)
-    # Make sleeps instant (patch where used!)
-    monkeypatch.setattr("qpay_client.v2.clients.client.time.sleep", lambda *_a, **_k: None)
+    # Make sleeps instant (time.sleep now lives in decorators.py)
+    monkeypatch.setattr("qpay_client.v2.clients.decorators.time.sleep", lambda *_a, **_k: None)
     return c
 
 

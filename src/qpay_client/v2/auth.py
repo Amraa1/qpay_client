@@ -45,11 +45,23 @@ class QpayAuthState:
         return f"{_normalize_to_capital(self.token_type)} {self.refresh_token}"
 
     def is_access_expired(self, leeway: float = 60) -> bool:
-        """Used to check if access token is expired."""
+        """
+        Return True if the access token is expired.
+
+        `access_token_expiry_at` is a Unix epoch timestamp as returned directly
+        by the QPay v2 API (field: `expires_in`). QPay deviates from the OAuth 2.0
+        spec by returning an absolute timestamp instead of relative seconds.
+        """
         return time.time() >= self.access_token_expiry_at - leeway
 
     def is_refresh_expired(self, leeway: float = 60) -> bool:
-        """Used to check if refresh token is expired."""
+        """
+        Return True if the refresh token is expired.
+
+        `refresh_token_expiry_at` is a Unix epoch timestamp as returned directly
+        by the QPay v2 API (field: `refresh_expires_in`). QPay deviates from the
+        OAuth 2.0 spec by returning an absolute timestamp instead of relative seconds.
+        """
         return time.time() >= self.refresh_token_expiry_at - leeway
 
     def update(self, token_response: TokenResponse) -> None:

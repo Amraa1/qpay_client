@@ -1,5 +1,4 @@
 import logging
-import time
 from typing import Optional, Union
 
 from httpx import BasicAuth, Client, Response
@@ -24,9 +23,8 @@ from ..schemas import (
 )
 from ..settings import QPaySettings
 from ..transport import SyncTransport
-from ..utils import exponential_backoff
 from .base import BaseClient
-from .decorators import auth_required
+from .decorators import auth_required, poll_until_paid
 
 
 class QPayClient(BaseClient):
@@ -214,54 +212,16 @@ class QPayClient(BaseClient):
         return data
 
     @auth_required
-    def payment_check(
-        self,
-        payment_check_request: PaymentCheckRequest,
-    ):
+    @poll_until_paid
+    def payment_check(self, payment_check_request: PaymentCheckRequest) -> PaymentCheckResponse:
+        """Check payment status, polling until a payment is found or retries exhausted."""
         response = self._request(
             "POST",
             "/payment/check",
             headers=self.headers(),
             json=payment_check_request.model_dump(by_alias=True, exclude_none=True, mode="json"),
         )
-
-        data = PaymentCheckResponse.model_validate(response.json())
-
-        if data.count > 0:
-            return data
-
-        for attempt in range(1, self._settings.payment_check_retries + 1):
-            self._logger.warning(
-                "Retrying POST: /payment/check (attempt %d/%d)", attempt, self._settings.payment_check_retries
-            )
-
-            time.sleep(
-                exponential_backoff(
-                    self._settings.payment_check_delay,
-                    attempt,
-                    self._settings.payment_check_jitter,
-                )
-            )
-
-            response = self._request(
-                "POST",
-                "/payment/check",
-                headers=self.headers(),
-                json=payment_check_request.model_dump(by_alias=True, exclude_none=True, mode="json"),
-            )
-
-            self._logger.debug(
-                "Retry %s response: %s /payment/check",
-                attempt,
-                response.status_code,
-            )
-
-            data = PaymentCheckResponse.model_validate(response.json())
-
-            if data.count > 0:
-                break
-
-        return data
+        return PaymentCheckResponse.model_validate(response.json())
 
     @auth_required
     def payment_cancel(
