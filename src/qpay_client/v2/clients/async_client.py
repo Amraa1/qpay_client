@@ -5,8 +5,9 @@ from typing import Optional, Union
 from httpx import AsyncClient, BasicAuth, Response
 
 from ..schemas import (
-    Ebarimt,
     EbarimtCreateRequest,
+    EbarimtCreateResponse,
+    EbarimtGetResponse,
     InvoiceCreateRequest,
     InvoiceCreateResponse,
     InvoiceCreateSimpleRequest,
@@ -29,11 +30,25 @@ from .decorators import async_auth_required, async_poll_until_paid
 
 class AsyncQPayClient(BaseClient):
     """
-    Asynchronous client for QPay v2 API.
+    Asynchronous client for the QPay v2 API.
 
-    This client handles authentication, token refresh, and provides async
-    methods for interacting with QPay v2 endpoints (invoices, payments,
-    subscriptions, and ebarimt). It is designed to follow the official QPay v2.
+    Always use as an async context manager. Authentication runs on ``__aenter__``
+    and the HTTP connection is closed on ``__aexit__``::
+
+        settings = QPaySettings.production(
+            username="...", password="...", invoice_code="..."
+        )
+        async with AsyncQPayClient(settings) as client:
+            invoice = await client.invoice_create(InvoiceCreateSimpleRequest(...))
+            result  = await client.payment_check(PaymentCheckRequest(...))
+
+    Available endpoints: ``invoice_create``, ``invoice_get``, ``invoice_cancel``,
+    ``payment_get``, ``payment_check``, ``payment_cancel``, ``payment_refund``,
+    ``payment_list``, ``ebarimt_create``, ``ebarimt_get``,
+    ``subscription_get``, ``subscription_cancel``.
+
+    Concurrency-safe: ``authenticate()`` is guarded by an ``asyncio.Lock``,
+    so multiple coroutines sharing one client instance will not race on token refresh.
     """
 
     def __init__(
@@ -63,9 +78,7 @@ class AsyncQPayClient(BaseClient):
         return self._client.is_closed
 
     async def __aenter__(self):
-        # client authenticates early here if not authenticated
-        if not self.is_authenticated:
-            await self._authenticate()
+        await self.authenticate()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -77,13 +90,14 @@ class AsyncQPayClient(BaseClient):
 
     async def authenticate(self) -> None:
         """Authenticate client."""
-        if self.is_authenticated:
-            return  # no need to reauthenticate
+        async with self._async_lock:
+            if self.is_authenticated:
+                return  # no need to reauthenticate
 
-        if not self._auth_state.has_access_token() or self.is_refresh_expired:
-            await self._authenticate()  # first token or refresh token expired
-        else:
-            await self._refresh_access_token()
+            if not self._auth_state.has_access_token() or self.is_refresh_expired:
+                await self._authenticate_nolock()  # first token or refresh token expired
+            else:
+                await self._refresh_access_token_nolock()
 
     async def _request(
         self,
@@ -150,19 +164,12 @@ class AsyncQPayClient(BaseClient):
         else:
             await self._authenticate_nolock()
 
-    async def _get_auth_token(self) -> str:
-        """Get authenticated access token."""
-        if self.is_authenticated:
-            return self.token
-        await self.authenticate()
-        return self.token
-
     @async_auth_required
-    async def invoice_get(self, invoice_id: str):
+    async def invoice_get(self, invoice_id: str) -> InvoiceGetResponse:
         """Get invoice by Id."""
         response = await self._request(
             "GET",
-            "/invoice/" + invoice_id,
+            f"/invoice/{invoice_id}",
             headers=self.headers(),
         )
 
@@ -188,22 +195,22 @@ class AsyncQPayClient(BaseClient):
     async def invoice_cancel(
         self,
         invoice_id: str,
-    ):
+    ) -> int:
         """Send cancel invoice request to qpay. Returns status code."""
         response = await self._request(
             "DELETE",
-            "/invoice/" + invoice_id,
+            f"/invoice/{invoice_id}",
             headers=self.headers(),
         )
 
         return response.status_code
 
     @async_auth_required
-    async def payment_get(self, payment_id: str):
+    async def payment_get(self, payment_id: str) -> PaymentGetResponse:
         """Send get payment requesst to qpay."""
         response = await self._request(
             "GET",
-            "/payment/" + payment_id,
+            f"/payment/{payment_id}",
             headers=self.headers(),
         )
 
@@ -231,7 +238,7 @@ class AsyncQPayClient(BaseClient):
         """Send payment cancel request. Returns status code."""
         response = await self._request(
             "DELETE",
-            "/payment/cancel/" + payment_id,
+            f"/payment/cancel/{payment_id}",
             headers=self.headers(),
             json=payment_cancel_request.model_dump(by_alias=True, exclude_none=True, mode="json"),
         )
@@ -243,11 +250,11 @@ class AsyncQPayClient(BaseClient):
         self,
         payment_id: str,
         payment_refund_request: PaymentRefundRequest,
-    ):
+    ) -> int:
         """Send refund payment request. Returns status code."""
         response = await self._request(
             "DELETE",
-            "/payment/refund/" + payment_id,
+            f"/payment/refund/{payment_id}",
             headers=self.headers(),
             json=payment_refund_request.model_dump(by_alias=True, exclude_none=True, mode="json"),
         )
@@ -255,7 +262,7 @@ class AsyncQPayClient(BaseClient):
         return response.status_code
 
     @async_auth_required
-    async def payment_list(self, payment_list_request: PaymentListRequest):
+    async def payment_list(self, payment_list_request: PaymentListRequest) -> PaymentListResponse:
         """Send list payment request."""
         response = await self._request(
             "POST",
@@ -268,7 +275,7 @@ class AsyncQPayClient(BaseClient):
         return data
 
     @async_auth_required
-    async def ebarimt_create(self, ebarimt_create_request: EbarimtCreateRequest):
+    async def ebarimt_create(self, ebarimt_create_request: EbarimtCreateRequest) -> EbarimtCreateResponse:
         """Send create ebarimt request."""
         response = await self._request(
             "POST",
@@ -277,27 +284,27 @@ class AsyncQPayClient(BaseClient):
             json=ebarimt_create_request.model_dump(by_alias=True, exclude_none=True, mode="json"),
         )
 
-        data = Ebarimt.model_validate(response.json())
+        data = EbarimtCreateResponse.model_validate(response.json())
         return data
 
     @async_auth_required
-    async def ebarimt_get(self, barimt_id: str):
+    async def ebarimt_get(self, barimt_id: str) -> EbarimtGetResponse:
         """Send get ebarimt request."""
         response = await self._request(
             "GET",
-            "/ebarimt/" + barimt_id,
+            f"/ebarimt/{barimt_id}",
             headers=self.headers(),
         )
 
-        data = Ebarimt.model_validate(response.json())
+        data = EbarimtGetResponse.model_validate(response.json())
         return data
 
     @async_auth_required
-    async def subscription_get(self, subscription_id: str):
+    async def subscription_get(self, subscription_id: str) -> SubscriptionGetResponse:
         """Send get subscription request."""
         response = await self._request(
             "GET",
-            "/subscription/" + subscription_id,
+            f"/subscription/{subscription_id}",
             headers=self.headers(),
         )
 
@@ -305,11 +312,11 @@ class AsyncQPayClient(BaseClient):
         return data
 
     @async_auth_required
-    async def subscription_cancel(self, subscription_id: str):
+    async def subscription_cancel(self, subscription_id: str) -> int:
         """Send cancel subscription request."""
         response = await self._request(
             "DELETE",
-            "/subscription/" + subscription_id,
+            f"/subscription/{subscription_id}",
             headers=self.headers(),
         )
 

@@ -19,7 +19,26 @@ from .defaults import (
 
 @dataclass(frozen=True)
 class QPaySettings:
-    """QPay client settings."""
+    """
+    Immutable configuration for QPay v2 clients.
+
+    Prefer the factory methods over constructing this class directly:
+
+    - ``QPaySettings.sandbox()`` — connects to the QPay sandbox with shared
+      test credentials. All parameters are optional; useful for local development.
+    - ``QPaySettings.production(username=..., password=..., invoice_code=...)``
+      — connects to the live QPay merchant API with your own credentials.
+
+    Retry and polling settings are independent:
+
+    - ``client_retries`` / ``client_delay`` / ``client_jitter`` control how the
+      HTTP transport retries network errors and 5xx responses.
+    - ``payment_check_retries`` / ``payment_check_delay`` / ``payment_check_jitter``
+      control how ``payment_check()`` polls until a payment is confirmed.
+
+    ``token_leeway`` (default 60 s) is the window before token expiry in which
+    the client proactively refreshes, preventing races at the boundary.
+    """
 
     username: str
     password: str
@@ -47,6 +66,15 @@ class QPaySettings:
         invoice_code: str = SANDBOX_INVOICE_CODE,
         **kwargs,
     ) -> "QPaySettings":
+        """
+        Return settings pointed at the QPay sandbox environment.
+
+        Credentials default to QPay's shared sandbox values, so calling
+        ``QPaySettings.sandbox()`` with no arguments is enough for basic testing.
+        Pass explicit ``username``, ``password``, or ``invoice_code`` to override.
+        Any extra keyword arguments are forwarded to ``QPaySettings`` (e.g.
+        ``payment_check_retries=3``).
+        """
         return cls(
             username=username,
             password=password,
@@ -64,6 +92,12 @@ class QPaySettings:
         invoice_code: str,
         **kwargs,
     ) -> "QPaySettings":
+        """
+        Return settings pointed at the live QPay merchant API.
+
+        All three credential arguments are required. Any extra keyword arguments
+        are forwarded to ``QPaySettings`` (e.g. ``client_retries=3``).
+        """
         return cls(
             username=username,
             password=password,

@@ -9,17 +9,17 @@ with QPay`s current API version. Future versions may introduce breaking changes 
 different namespaces (e.g., `v3`).
 
 Exports:
-    - QPayClient: Asynchronous client for interacting with QPay`s v2 API.
-    - QPayClientSync: Synchronous client for interacting with QPay`s v2 API.
+    - AsyncQPayClient: Asynchronous client for interacting with QPay`s v2 API.
+    - QPayClient: Synchronous client for interacting with QPay`s v2 API.
 
 Example:
-    >>> from qpay_client.v2 import QPayClient
-    >>> client = AsyncQPayClient(...)
-    >>> invoice = await client.create_invoice(...)
+    >>> from qpay_client.v2 import AsyncQPayClient
+    >>> async with AsyncQPayClient(...) as client:
+    ...     invoice = await client.invoice_create(...)
 
     >>> from qpay_client.v2 import QPayClient
-    >>> client = QPayClient(...)
-    >>> invoice = client.create_invoice(...)
+    >>> with QPayClient(...) as client:
+    ...     invoice = client.invoice_create(...)
 
 """
 

@@ -53,7 +53,11 @@ def test_handle_error_with_no_message(monkeypatch):
 def test_exponential_backoff():
     base = 10
     jitter = 0.5
+    max_delay = 60.0
 
     for attempt in range(1, 6):
         delay = exponential_backoff(base, attempt, jitter)
-        assert base * (2 ** (attempt - 1)) < delay < base * (2 ** (attempt - 1)) + jitter
+        assert delay <= max_delay
+        uncapped_min = base * (2 ** (attempt - 1))
+        if uncapped_min < max_delay:
+            assert uncapped_min < delay < uncapped_min + jitter

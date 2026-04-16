@@ -217,7 +217,26 @@ QpayErrorDetail = {
 
 
 class QPayError(Exception):
-    """Raised when Qpay server returns error."""
+    """
+    Raised when the QPay API returns an error response.
+
+    Attributes:
+        status_code: HTTP status code from the API (e.g. ``400``, ``401``, ``422``).
+        error_key: Machine-readable key from QPay (e.g. ``"INVOICE_NOTFOUND"``).
+        error_detail: Human-readable description in English and Mongolian, or
+            ``"No description."`` if the key is not recognised.
+
+    Example::
+
+
+        try:
+            invoice = client.invoice_get(invoice_id)
+        except QPayError as e:
+            print(e.status_code)          # 422
+            print(e.error_key)            # "INVOICE_NOTFOUND"
+            print(e.error_detail.en)      # "Invoice is not found!"
+
+    """
 
     def __init__(self, *, status_code: int, error_key: str) -> None:
         self.status_code = status_code

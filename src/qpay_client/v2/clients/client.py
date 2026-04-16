@@ -29,16 +29,24 @@ from .decorators import auth_required, poll_until_paid
 
 class QPayClient(BaseClient):
     """
-    Synchronous client for QPay v2 API.
+    Synchronous client for the QPay v2 API.
 
-    This client handles authentication, token refresh, and provides async
-    methods for interacting with QPay v2 endpoints (invoices, payments,
-    subscriptions, and ebarimt). It is designed to follow the official QPay v2.
+    Always use as a context manager. Authentication runs on ``__enter__``
+    and the HTTP connection is closed on ``__exit__``::
 
-    Note:
-        QPayClientSync is not thread-safe.
-        Use one instance per thread or protect externally.
+        settings = QPaySettings.production(
+            username="...", password="...", invoice_code="..."
+        )
+        with QPayClient(settings) as client:
+            invoice = client.invoice_create(InvoiceCreateSimpleRequest(...))
+            result  = client.payment_check(PaymentCheckRequest(...))
 
+    Available endpoints: ``invoice_create``, ``invoice_get``, ``invoice_cancel``,
+    ``payment_get``, ``payment_check``, ``payment_cancel``, ``payment_refund``,
+    ``payment_list``, ``ebarimt_create``, ``ebarimt_get``,
+    ``subscription_get``, ``subscription_cancel``.
+
+    Not thread-safe. Use one instance per thread or protect access with a lock.
     """
 
     def __init__(
@@ -66,9 +74,7 @@ class QPayClient(BaseClient):
         return self._client.is_closed
 
     def __enter__(self):
-        # client authenticates early here if not authenticated
-        if not self.is_authenticated:
-            self._authenticate()
+        self.authenticate()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -157,17 +163,12 @@ class QPayClient(BaseClient):
             self._refresh_access_token()
         return self._auth_state.get_access_token()
 
-    def _get_auth_token(self) -> str:
-        if self.is_authenticated:
-            return self.token
-        return self.get_token()
-
     @auth_required
-    def invoice_get(self, invoice_id: str):
+    def invoice_get(self, invoice_id: str) -> InvoiceGetResponse:
         """Get invoice by Id."""
         response = self._request(
             "GET",
-            "/invoice/" + invoice_id,
+            f"/invoice/{invoice_id}",
             headers=self.headers(),
         )
 
@@ -175,7 +176,7 @@ class QPayClient(BaseClient):
         return data
 
     @auth_required
-    def invoice_create(self, create_invoice_request: Union[InvoiceCreateRequest, InvoiceCreateSimpleRequest]):
+    def invoice_create(self, create_invoice_request: Union[InvoiceCreateRequest, InvoiceCreateSimpleRequest]) -> InvoiceCreateResponse:
         """Create invoice."""
         response = self._request(
             "POST",
@@ -191,20 +192,20 @@ class QPayClient(BaseClient):
     def invoice_cancel(
         self,
         invoice_id: str,
-    ):
+    ) -> int:
         response = self._request(
             "DELETE",
-            "/invoice/" + invoice_id,
+            f"/invoice/{invoice_id}",
             headers=self.headers(),
         )
 
         return response.status_code
 
     @auth_required
-    def payment_get(self, payment_id: str):
+    def payment_get(self, payment_id: str) -> PaymentGetResponse:
         response = self._request(
             "GET",
-            "/payment/" + payment_id,
+            f"/payment/{payment_id}",
             headers=self.headers(),
         )
 
@@ -228,10 +229,10 @@ class QPayClient(BaseClient):
         self,
         payment_id: str,
         payment_cancel_request: PaymentCancelRequest,
-    ):
+    ) -> int:
         response = self._request(
             "DELETE",
-            "/payment/cancel/" + payment_id,
+            f"/payment/cancel/{payment_id}",
             headers=self.headers(),
             json=payment_cancel_request.model_dump(by_alias=True, exclude_none=True, mode="json"),
         )
@@ -243,10 +244,10 @@ class QPayClient(BaseClient):
         self,
         payment_id: str,
         payment_refund_request: PaymentRefundRequest,
-    ):
+    ) -> int:
         response = self._request(
             "DELETE",
-            "/payment/refund/" + payment_id,
+            f"/payment/refund/{payment_id}",
             headers=self.headers(),
             json=payment_refund_request.model_dump(by_alias=True, exclude_none=True, mode="json"),
         )
@@ -254,7 +255,7 @@ class QPayClient(BaseClient):
         return response.status_code
 
     @auth_required
-    def payment_list(self, payment_list_request: PaymentListRequest):
+    def payment_list(self, payment_list_request: PaymentListRequest) -> PaymentListResponse:
         response = self._request(
             "POST",
             "/payment/list",
@@ -266,7 +267,7 @@ class QPayClient(BaseClient):
         return data
 
     @auth_required
-    def ebarimt_create(self, ebarimt_create_request: EbarimtCreateRequest):
+    def ebarimt_create(self, ebarimt_create_request: EbarimtCreateRequest) -> EbarimtCreateResponse:
         response = self._request(
             "POST",
             "/ebarimt/create",
@@ -278,10 +279,10 @@ class QPayClient(BaseClient):
         return data
 
     @auth_required
-    def ebarimt_get(self, barimt_id: str):
+    def ebarimt_get(self, barimt_id: str) -> EbarimtGetResponse:
         response = self._request(
             "GET",
-            "/ebarimt/" + barimt_id,
+            f"/ebarimt/{barimt_id}",
             headers=self.headers(),
         )
 
@@ -289,11 +290,11 @@ class QPayClient(BaseClient):
         return data
 
     @auth_required
-    def subscription_get(self, subscription_id: str):
+    def subscription_get(self, subscription_id: str) -> SubscriptionGetResponse:
         """Send get subscription request."""
         response = self._request(
             "GET",
-            "/subscription/" + subscription_id,
+            f"/subscription/{subscription_id}",
             headers=self.headers(),
         )
 
@@ -301,11 +302,11 @@ class QPayClient(BaseClient):
         return data
 
     @auth_required
-    def subscription_cancel(self, subscription_id: str):
+    def subscription_cancel(self, subscription_id: str) -> int:
         """Send cancel subscription request."""
         response = self._request(
             "DELETE",
-            "/subscription/" + subscription_id,
+            f"/subscription/{subscription_id}",
             headers=self.headers(),
         )
 

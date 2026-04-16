@@ -10,7 +10,7 @@ def safe_json(response: Response) -> dict[str, str]:
     """Avoids json error."""
     try:
         return response.json()
-    except Exception:
+    except ValueError:
         return {"message": response.text}
 
 
@@ -21,6 +21,7 @@ def handle_error(response: Response, logger: Logger):
     raise QPayError(status_code=response.status_code, error_key=error_data.get("message", ""))
 
 
-def exponential_backoff(base_delay: float, attempt: int, jitter: float) -> float:
+def exponential_backoff(base_delay: float, attempt: int, jitter: float, max_delay: float = 60.0) -> float:
     """Returns delay for retry backoff."""
-    return base_delay * (2 ** (attempt - 1)) + random() * jitter
+    delay = base_delay * (2 ** (attempt - 1)) + random() * jitter
+    return min(delay, max_delay)
