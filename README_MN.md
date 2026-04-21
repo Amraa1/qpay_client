@@ -8,48 +8,49 @@
 ![PyPI - Downloads](https://img.shields.io/pypi/dw/qpay-client)
 ![Documentation Status](https://readthedocs.org/projects/qpay-client/badge/?version=latest)
 
-> [Монгол хувилбар — README_MN.md](README_MN.md)
+> [English version — README.md](README.md)
 
-`qpay-client` is a Python client library for integrating with the QPay v2 payment API (Mongolian payment provider).
-It supports both async and sync clients, Pydantic-validated schemas, automatic token management, retry logic, and typed wrappers for common endpoints.
+`qpay-client` нь QPay v2 API-тай Python орчноос холбогдохыг хялбарчлах клиент сан юм.
+Энэ сан нь `async` болон `sync` клиент, schema validation, access token / refresh token удирдлага,
+retry logic, мөн түгээмэл endpoint-уудын typed wrapper-уудыг агуулдаг.
 
-Documentation: [qpay-client.readthedocs.io](https://qpay-client.readthedocs.io/en/latest/)
+Баримт бичиг: [qpay-client.readthedocs.io](https://qpay-client.readthedocs.io/mn/latest/)
 
-QPay developer portal: [developer.qpay.mn](https://developer.qpay.mn)
+QPay developer портал: [developer.qpay.mn](https://developer.qpay.mn)
 
-## Features
+## Гол боломжууд
 
-- Both `AsyncQPayClient` and `QPayClient` (sync) supported
-- Authentication and token refresh managed automatically
-- Request/response validation via Pydantic v2 schemas
-- Retry logic for network errors and transient server failures
-- Configurable `payment_check` polling with exponential backoff
-- `with` and `async with` context manager support
-- Structured `QPayError` exceptions with error codes and descriptions
+- `AsyncQPayClient` болон `QPayClient` хоёуланг нь дэмжинэ
+- Authentication, token refresh-ийг дотооддоо удирдана
+- Pydantic schema ашиглан request/response-ийг шалгана
+- Network error болон серверийн түр зуурын алдаанд retry хийж чадна
+- `payment_check` polling-ийг тохиргоогоор удирдаж чадна
+- `with` болон `async with` context manager дэмждэг
+- QPay алдааг `QPayError` хэлбэрээр илүү ойлгомжтой буцаана
 
-## Installation
+## Суулгах
 
-Using `pip`:
+`pip` ашиглах:
 
 ```bash
 pip install qpay-client
 ```
 
-Using `uv`:
+`uv` ашиглах:
 
 ```bash
 uv add qpay-client
 ```
 
-Using `poetry`:
+`poetry` ашиглах:
 
 ```bash
 poetry add qpay-client
 ```
 
-## Quickstart
+## Хурдан эхлэх
 
-### Async client
+### Async клиент
 
 ```python
 from decimal import Decimal
@@ -65,7 +66,7 @@ async def main():
             InvoiceCreateSimpleRequest(
                 sender_invoice_no="ORDER-1001",
                 invoice_receiver_code="terminal",
-                invoice_description="Test invoice",
+                invoice_description="Туршилтын нэхэмжлэх",
                 amount=Decimal("1500"),
                 callback_url="https://example.com/qpay/callback?payment_id=ORDER-1001",
             )
@@ -75,7 +76,7 @@ async def main():
         print(invoice.qPay_shortUrl)
 ```
 
-### Sync client
+### Sync клиент
 
 ```python
 from decimal import Decimal
@@ -90,7 +91,7 @@ with QPayClient(settings=settings) as client:
         InvoiceCreateSimpleRequest(
             sender_invoice_no="ORDER-1002",
             invoice_receiver_code="terminal",
-            invoice_description="Sync test invoice",
+            invoice_description="Sync туршилтын нэхэмжлэх",
             amount=Decimal("2500"),
             callback_url="https://example.com/qpay/callback?payment_id=ORDER-1002",
         )
@@ -99,7 +100,7 @@ with QPayClient(settings=settings) as client:
     print(invoice.invoice_id)
 ```
 
-## Configuration
+## Тохиргоо
 
 ### Sandbox
 
@@ -121,7 +122,7 @@ settings = QPaySettings.production(
 )
 ```
 
-### Retry and delay settings
+### Retry болон delay тохируулах
 
 ```python
 settings = QPaySettings.sandbox(
@@ -134,7 +135,7 @@ settings = QPaySettings.sandbox(
 )
 ```
 
-## Checking a payment
+## Төлбөр шалгах жишээ
 
 ```python
 from qpay_client.v2.enums import ObjectType
@@ -149,44 +150,44 @@ check_request = PaymentCheckRequest(
 result = await client.payment_check(check_request)
 
 if result.count > 0:
-    print("Payment found")
+    print("Төлбөр олдлоо")
 ```
 
-## FastAPI callback flow
+## FastAPI callback урсгал
 
-`examples/quickstart.py` contains a working async example with a QPay callback endpoint.
+`examples/quickstart.py` файлд callback endpoint-тэй энгийн async жишээ бий.
 
-The general pattern is:
+Үндсэн санаа нь:
 
-1. Create an invoice
-2. Store the `invoice_id` in your database
-3. On QPay callback, call `payment_check` to verify the payment
-4. Return `"SUCCESS"` with HTTP 200
+1. Invoice үүсгэнэ
+2. `invoice_id`-г өөрийн storage-д хадгална
+3. QPay callback ирэх үед `payment_check` ашиглан төлбөрийг шалгана
+4. Амжилттай боловсруулсны дараа `SUCCESS` буцаана
 
-To run the example:
+Жишээ файлыг ажиллуулах:
 
 ```bash
 fastapi dev examples/quickstart.py
 ```
 
-Returning HTTP 200 with body `"SUCCESS"` from your callback endpoint is required by QPay.
+QPay callback endpoint-ийн хариу амжилттай байх үед HTTP 200 болон `SUCCESS` буцаах нь чухал.
 
-## Import paths
+## Импортын зөвлөмж
 
-Import clients and settings from `qpay_client.v2`:
+Клиент болон тохиргоог `qpay_client.v2`-оос импортлоорой:
 
 ```python
 from qpay_client.v2 import AsyncQPayClient, QPayClient, QPaySettings, QPayError
 ```
 
-Import schemas and enums from their respective modules:
+Schema болон enum-уудыг дараах модулиудаас импортлоно:
 
 ```python
 from qpay_client.v2.enums import ObjectType
 from qpay_client.v2.schemas import InvoiceCreateSimpleRequest, Offset, PaymentCheckRequest
 ```
 
-## Supported endpoints
+## Дэмжигддэг endpoint-ууд
 
 ### Authentication
 
@@ -217,13 +218,13 @@ from qpay_client.v2.schemas import InvoiceCreateSimpleRequest, Offset, PaymentCh
 - `subscription_get`
 - `subscription_cancel`
 
-## Notes
+## Анхаарах зүйлс
 
-- Never call `QPaySettings()` directly — use `sandbox()` or `production()` factory methods.
-- All public endpoint methods check and refresh authentication automatically; no need to manage tokens manually.
-- `payment_check` polls with exponential backoff — tune retry/delay settings to your use case.
-- Do not commit production credentials to source control.
+- `QPaySettings()`-ийг хоосноор нь дуудахгүй. `sandbox()` эсвэл `production()` factory ашиглана.
+- Public endpoint-ууд auth-аа өөрсдөө шалгадаг тул request бүрийн өмнө токенээ гараар шинэчлэх шаардлагагүй.
+- `payment_check` polling хийж болох тул timeout болон retry тохиргоогоо өөрийн хэрэглээнд тааруулж сонгоно.
+- Production credential-ээ репод шууд хадгалахгүй байхыг зөвлөе.
 
-## License
+## Лиценз
 
 MIT License
