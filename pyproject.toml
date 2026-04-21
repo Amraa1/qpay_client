@@ -4,11 +4,8 @@ version = "2.0.2"
 description = "QPay Integration made easy (async & sync, typed schemas, auto token refresh)"
 readme = "README.md"
 authors = [{ name = "Amraa1", email = "amarsanaaganbaatar0409@gmail.com" }]
-requires-python = ">=3.9"
-dependencies = [
-  "httpx>=0.28.1",
-  "pydantic>=2.10.0",
-]
+requires-python = ">=3.10"
+dependencies = ["httpx>=0.28.1", "pydantic>=2.10.0"]
 license = { file = "LICENSE.txt" }
 keywords = [
   "qpay",
@@ -48,7 +45,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-  "pytest>=8",
+  "pytest>=9.0.3",
   "pytest-asyncio>=0.23",
   "anyio>=4",
   "respx>=0.21",
