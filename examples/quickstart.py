@@ -4,8 +4,8 @@ from decimal import Decimal
 from fastapi import FastAPI, status
 
 from qpay_client.v2 import AsyncQPayClient, QPaySettings
-from qpay_client.v2.schemas.enums import ObjectType
-from qpay_client.v2.schemas.schemas import InvoiceCreateSimpleRequest, Offset, PaymentCheckRequest
+from qpay_client.v2.enums import ObjectType
+from qpay_client.v2.schemas import InvoiceCreateSimpleRequest, Offset, PaymentCheckRequest
 
 # QPay client settings
 settings = QPaySettings.sandbox()
