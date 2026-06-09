@@ -15,7 +15,7 @@ def auth_required(func: SyncMethod) -> SyncMethod:
         self.authenticate()
         return func(self, *args, **kwargs)
 
-    return wrapper  # type: ignore[return-value]
+    return wrapper  # ty: ignore[invalid-return-type]
 
 
 def async_auth_required(func: AsyncMethod) -> AsyncMethod:
@@ -26,7 +26,7 @@ def async_auth_required(func: AsyncMethod) -> AsyncMethod:
         await self.authenticate()
         return await func(self, *args, **kwargs)
 
-    return wrapper  # type: ignore[return-value]
+    return wrapper  # ty: ignore[invalid-return-type]
 
 
 def poll_until_paid(func: SyncMethod) -> SyncMethod:
@@ -63,7 +63,7 @@ def poll_until_paid(func: SyncMethod) -> SyncMethod:
                 break
         return data
 
-    return wrapper  # type: ignore[return-value]
+    return wrapper  # ty: ignore[invalid-return-type]
 
 
 def async_poll_until_paid(func: AsyncMethod) -> AsyncMethod:
@@ -95,4 +95,4 @@ def async_poll_until_paid(func: AsyncMethod) -> AsyncMethod:
                 break
         return data
 
-    return wrapper  # type: ignore[return-value]
+    return wrapper  # ty: ignore[invalid-return-type]
