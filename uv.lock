@@ -934,7 +934,7 @@ dev = [
     { name = "pytest-asyncio", specifier = ">=0.23" },
     { name = "pytest-cov", specifier = ">=7.0.0" },
     { name = "respx", specifier = ">=0.21" },
-    { name = "ruff", specifier = ">=0.13.0" },
+    { name = "ruff", specifier = "~=0.15.0" },
     { name = "types-requests" },
 ]
 

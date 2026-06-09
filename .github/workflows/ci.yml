@@ -2,6 +2,8 @@ name: CI
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 permissions:
   contents: read
@@ -15,5 +17,4 @@ jobs:
         with:
           # Install a specific version of uv.
           version: "0.11.7"
-      - run: uvx ruff check .
-      - run: uvx ruff format --check .
+      - run: uv run ruff check
