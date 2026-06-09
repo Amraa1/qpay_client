@@ -9,7 +9,7 @@ exclude = [
     ".git-rewrite",
     ".hg",
     ".ipynb_checkpoints",
-    ".mypy_cache",
+    ".ty_cache",
     ".nox",
     ".pants.d",
     ".pyenv",

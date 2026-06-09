@@ -36,7 +36,7 @@ uv run ruff check .
 uv run ruff format .
 
 # Type check
-uv run mypy src/
+uv run ty check src/
 ```
 
 ## Architecture
