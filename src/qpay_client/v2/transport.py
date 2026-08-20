@@ -3,7 +3,8 @@
 import asyncio
 import logging
 import time
-from typing import Any, Awaitable, Callable, Optional
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from httpx import AsyncClient, Client, RequestError, Response
 
@@ -22,7 +23,7 @@ class SyncTransport:
         self,
         settings: QPaySettings,
         logger: logging.Logger,
-        client: Optional[Client] = None,
+        client: Client | None = None,
     ) -> None:
         self._client = client or Client(
             base_url=settings.base_url,
@@ -65,10 +66,10 @@ class SyncTransport:
         method: str,
         url: str,
         *,
-        on_unauthorized: Optional[SyncRefreshHandler] = None,
+        on_unauthorized: SyncRefreshHandler | None = None,
         **kwargs: Any,
     ) -> Response:
-        response: Optional[Response] = None
+        response: Response | None = None
 
         for attempt in range(self._settings.client_retries + 1):
             try:
@@ -126,7 +127,7 @@ class AsyncTransport:
         *,
         settings: QPaySettings,
         logger: logging.Logger,
-        client: Optional[AsyncClient] = None,
+        client: AsyncClient | None = None,
     ) -> None:
         self._settings = settings
         self._logger = logger
@@ -173,10 +174,10 @@ class AsyncTransport:
         method: str,
         url: str,
         *,
-        on_unauthorized: Optional[AsyncRefreshHandler] = None,
+        on_unauthorized: AsyncRefreshHandler | None = None,
         **kwargs: Any,
     ) -> Response:
-        response: Optional[Response] = None
+        response: Response | None = None
 
         for attempt in range(self._settings.client_retries + 1):
             try:

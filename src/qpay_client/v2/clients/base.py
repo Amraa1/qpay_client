@@ -1,6 +1,5 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Optional
 
 from httpx import Headers
 from pydantic import BaseModel
@@ -27,7 +26,7 @@ class BaseClient(ABC):
         self,
         settings: QPaySettings,
         *,
-        logger: Optional[logging.Logger] = None,
+        logger: logging.Logger | None = None,
     ):
         """
         Initialize QPayClientSync object.
