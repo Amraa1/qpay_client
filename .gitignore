@@ -1,5 +1,9 @@
 # Python-generated files
 __pycache__/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
 *.py[oc]
 build/
 dist/

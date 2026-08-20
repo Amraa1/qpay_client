@@ -66,8 +66,8 @@ jobs:
           uv pip install --python .smoke-venv/bin/python dist/*.whl
           .smoke-venv/bin/python scripts/smoke_test.py
 
-      - name: Install dependencies
-        run: uv sync
+      - name: Install test dependencies
+        run: uv sync --no-default-groups --group test
 
       - name: Integration tests against the QPay sandbox
         # Runs from the source tree: these verify QPay's API still behaves,
@@ -75,7 +75,7 @@ jobs:
         # No secrets needed -- the public sandbox merchant is the default.
         env:
           QPAY_RUN_LIVE_TESTS: "1"
-        run: uv run pytest -m integration
+        run: uv run --no-sync pytest -m integration
 
   pypi-publish:
     runs-on: ubuntu-latest

@@ -30,10 +30,10 @@ jobs:
       - name: Install uv and set up Python
         uses: astral-sh/setup-uv@v7
 
-      - name: Install dependencies
-        run: uv sync
+      - name: Install test dependencies
+        run: uv sync --no-default-groups --group test
 
       - name: Run integration tests against the QPay sandbox
         env:
           QPAY_RUN_LIVE_TESTS: "1"
-        run: uv run pytest -m integration
+        run: uv run --no-sync pytest -m integration
