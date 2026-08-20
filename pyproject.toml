@@ -55,3 +55,11 @@ dev = [
 
 [project.optional-dependencies]
 docs = ["sphinx>=7.4.7", "sphinx-rtd-theme>=3.0.2"]
+
+[tool.coverage.run]
+# Measure the library, not the things that test it. Counting the test suite and
+# helper scripts inflates the total and, worse, makes an intentionally
+# unexercised branch in a conftest look like a coverage regression in the
+# package itself.
+source = ["src/qpay_client"]
+branch = true
