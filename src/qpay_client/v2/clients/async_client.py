@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from typing import Optional, Union
 
 from httpx import AsyncClient, BasicAuth, Response
 
@@ -55,8 +54,8 @@ class AsyncQPayClient(BaseClient):
         self,
         settings: QPaySettings,
         *,
-        client: Optional[AsyncClient] = None,
-        logger: Optional[logging.Logger] = None,
+        client: AsyncClient | None = None,
+        logger: logging.Logger | None = None,
     ):
         """
         Initialize AsyncQPayClient object.
@@ -178,7 +177,7 @@ class AsyncQPayClient(BaseClient):
 
     @async_auth_required
     async def invoice_create(
-        self, create_invoice_request: Union[InvoiceCreateRequest, InvoiceCreateSimpleRequest]
+        self, create_invoice_request: InvoiceCreateRequest | InvoiceCreateSimpleRequest
     ) -> InvoiceCreateResponse:
         """Send invoice create request to Qpay."""
         response = await self._request(

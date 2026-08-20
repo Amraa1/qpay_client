@@ -1,5 +1,4 @@
 import logging
-from typing import Optional, Union
 
 from httpx import BasicAuth, Client, Response
 
@@ -53,8 +52,8 @@ class QPayClient(BaseClient):
         self,
         settings: QPaySettings,
         *,
-        client: Optional[Client] = None,
-        logger: Optional[logging.Logger] = None,
+        client: Client | None = None,
+        logger: logging.Logger | None = None,
     ):
         """
         Initialize QPayClient object.
@@ -176,7 +175,9 @@ class QPayClient(BaseClient):
         return data
 
     @auth_required
-    def invoice_create(self, create_invoice_request: Union[InvoiceCreateRequest, InvoiceCreateSimpleRequest]) -> InvoiceCreateResponse:
+    def invoice_create(
+        self, create_invoice_request: InvoiceCreateRequest | InvoiceCreateSimpleRequest
+    ) -> InvoiceCreateResponse:
         """Create invoice."""
         response = self._request(
             "POST",
