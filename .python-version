@@ -1,1 +1,4 @@
+# Develop against the floor of `requires-python` (see pyproject.toml), not the
+# newest release: contributors then run the version most likely to break.
+# CI covers the full supported range on every pull request.
 3.10

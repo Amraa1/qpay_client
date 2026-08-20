@@ -55,7 +55,3 @@ dev = [
 
 [project.optional-dependencies]
 docs = ["sphinx>=7.4.7", "sphinx-rtd-theme>=3.0.2"]
-
-[tool.ty.environment]
-# Check against the lowest supported Python version (see requires-python).
-python-version = "3.10"

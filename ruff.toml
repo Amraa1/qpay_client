@@ -1,6 +1,8 @@
 line-length = 120
 indent-width = 4
-target-version = "py39"
+# `target-version` is intentionally unset: Ruff infers it from
+# `project.requires-python` in pyproject.toml. Do not re-add it -- a second
+# copy of the supported floor is exactly what drifted to py39.
 exclude = [
     ".bzr",
     ".direnv",

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-`qpay-client` is a Python library for integrating with the QPay v2 payment API (Mongolian payment provider). It provides both async and sync clients, Pydantic-validated schemas, automatic token management, and retry logic. Supports Python 3.9–3.14.
+`qpay-client` is a Python library for integrating with the QPay v2 payment API (Mongolian payment provider). It provides both async and sync clients, Pydantic-validated schemas, automatic token management, and retry logic. Supports Python 3.10–3.14.
 
 ## Commands
 
