@@ -8,7 +8,9 @@
 ![PyPI - Downloads](https://img.shields.io/pypi/dw/qpay-client)
 ![Documentation Status](https://readthedocs.org/projects/qpay-client/badge/?version=latest)
 
-> [Монгол хувилбар — README_MN.md](README_MN.md)
+> [Монгол хувилбар — README.mn-MN.md](README.mn-MN.md)
+>
+> [Versión en español — README.es-ES.md](README.es-ES.md)
 
 `qpay-client` is a production-ready Python client for the QPay v2 payment API — Mongolia's leading payment provider.
 Built and used in production systems, it supports both async and sync clients, Pydantic v2-validated schemas, automatic

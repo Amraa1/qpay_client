@@ -8,8 +8,6 @@
 ![PyPI - Downloads](https://img.shields.io/pypi/dw/qpay-client)
 ![Documentation Status](https://readthedocs.org/projects/qpay-client/badge/?version=latest)
 
-> [English version — README.md](README.md)
-
 `qpay-client` нь QPay v2 API-тай Python орчноос холбогдохыг хялбарчлах клиент сан юм. Энэ сан нь `async` болон `sync`
 клиент, schema validation, access token / refresh token удирдлага, retry logic, мөн түгээмэл endpoint-уудын typed
 wrapper-уудыг агуулдаг.
