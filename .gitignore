@@ -12,6 +12,13 @@ wheels/
 # Virtual environments
 .venv
 
+# Local credentials. Nothing here is needed to run the tests -- the public
+# sandbox defaults cover that. This exists so that a real .env, if you ever
+# make one for your own sandbox merchant, cannot be committed by accident.
+.env
+.env.*
+!.env.example
+
 # docs build files
 docs/_build
 

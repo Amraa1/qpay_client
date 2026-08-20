@@ -1,0 +1,39 @@
+# Live tests against the QPay sandbox.
+#
+# Separate from `Test` on purpose: this workflow depends on a third party being
+# up, so a red run here means "QPay changed or is down", not "qpay-client is
+# broken". Keeping them apart stops a QPay outage from looking like our bug.
+#
+# No secrets are required. These tests fall back to QPay's public sandbox
+# merchant, which is published in QPay's own documentation -- which is also why
+# this workflow is safe to run from forks.
+
+name: Integration
+
+on:
+  schedule:
+    # Mondays 03:00 UTC. Catches QPay-side API drift between releases.
+    - cron: "0 3 * * 1"
+  # Run on demand -- most usefully, right before cutting a release.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sandbox:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv and set up Python
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run integration tests against the QPay sandbox
+        env:
+          QPAY_RUN_LIVE_TESTS: "1"
+        run: uv run pytest -m integration
