@@ -61,28 +61,32 @@ async def _new_client() -> AsyncQPayClient:
 
 @skip_live
 async def test_auth_token_obtained_from_sandbox():
-    client = await _new_client()
-    token = await client._get_auth_token()
-    assert isinstance(token, str)
-    assert len(token) > 10  # a JWT-ish string
+    # Entering the context manager authenticates, which is the documented usage.
+    async with await _new_client() as client:
+        token = client.token
+        assert isinstance(token, str)
+        assert len(token) > 10  # a JWT-ish string
 
 
 @skip_live
 async def test_refresh_token_path_works():
-    client = await _new_client()
-    # Force an authenticate to ensure we have refresh token material
-    tok1 = await client._get_auth_token()
-    assert tok1
+    async with await _new_client() as client:
+        tok1 = client.token
+        assert tok1
 
-    # Force refresh path by marking access expired but refresh valid
-    client._auth_state.refresh_token_expiry_at = 0
-    client._auth_state.access_token_expiry_at = 0
+        # Expire ONLY the access token. `authenticate()` branches on the refresh
+        # token still being valid, so this is what drives it down the
+        # /auth/refresh path rather than a full re-authenticate.
+        client.auth_state.access_token_expiry_at = 0
+        assert not client.is_authenticated
+        assert not client.is_refresh_expired
 
-    # This should call /auth/refresh under the hood and keep us authenticated
-    tok2 = await client._get_auth_token()
-    assert tok2
-    # Tokens may or may not change; just ensure we remain authorized.
-    assert isinstance(tok2, str)
+        await client.authenticate()
+
+        tok2 = client.token
+        # Tokens may or may not change; assert we came back authorized.
+        assert isinstance(tok2, str) and tok2
+        assert client.is_authenticated
 
 
 @skip_live
@@ -128,7 +132,8 @@ async def test_invoice_lifecycle_create_get_cancel_payment_check_and_list():
         object_id="TEST_INVOICE",  # docs: use invoice_code when object_type is INVOICE
         start_date=datetime.now() - timedelta(days=365),
         end_date=datetime.now(),
-        offset=Offset(page_number=1, page_limit=1000),
+        # QPay 500s on large page sizes for this endpoint; keep it modest.
+        offset=Offset(page_number=1, page_limit=20),
     )
 
     listed = await client.payment_list(list_req)

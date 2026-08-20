@@ -42,16 +42,37 @@ requires = ["uv_build>=0.8.14,<0.9.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
+# Groups are split by *what a CI job actually needs*. A single `dev` group meant
+# every leg of the 3.10-3.15 test matrix downloaded ruff and ty (~22 MB) just to
+# run pytest, and fastapi, which nothing under tests/ imports.
+
+# Everything required to run the test suite, and nothing else.
+test = ["pytest>=9.0.3", "pytest-asyncio>=0.23", "anyio>=4", "respx>=0.21"]
+
+# Static analysis. Runs once, on one Python version -- never across the matrix.
+lint = ["ruff~=0.15.0", "ty~=0.0.46"]
+
+# Coverage reporting, also a single-version job.
+cov = [{ include-group = "test" }, "pytest-cov>=7.0.0"]
+
+# Used only by examples/quickstart.py. Not imported by the library or the tests.
+examples = ["fastapi>=0.121.1"]
+
+# The default group, so a plain `uv sync` still gets the whole toolchain.
 dev = [
-  "pytest>=9.0.3",
-  "pytest-asyncio>=0.23",
-  "anyio>=4",
-  "respx>=0.21",
-  "ruff~=0.15.0",
-  "ty~=0.0.46",
-  "pytest-cov>=7.0.0",
-  "fastapi>=0.121.1",
+  { include-group = "test" },
+  { include-group = "lint" },
+  { include-group = "cov" },
+  { include-group = "examples" },
 ]
 
 [project.optional-dependencies]
 docs = ["sphinx>=7.4.7", "sphinx-rtd-theme>=3.0.2"]
+
+[tool.coverage.run]
+# Measure the library, not the things that test it. Counting the test suite and
+# helper scripts inflates the total and, worse, makes an intentionally
+# unexercised branch in a conftest look like a coverage regression in the
+# package itself.
+source = ["src/qpay_client"]
+branch = true

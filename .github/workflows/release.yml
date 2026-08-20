@@ -31,10 +31,57 @@ jobs:
           name: release-dists
           path: dist/
 
+  verify:
+    # Gate between building and publishing. `release: published` means the
+    # GitHub release already exists by the time this runs, so PyPI -- which
+    # cannot be un-published -- is the thing worth protecting.
+    #
+    # Note the trade-off: the integration step depends on QPay's sandbox being
+    # up, so an outage there blocks the publish. That is deliberate (we would
+    # rather delay a release than ship an unverified one), and re-running this
+    # workflow is the fix. Run the `Integration` workflow via workflow_dispatch
+    # before cutting a release to find that out early.
+    name: Verify the built distribution
+    runs-on: ubuntu-latest
+    needs:
+      - release-build
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v7
+
+      - name: Retrieve release distributions
+        uses: actions/download-artifact@v8
+        with:
+          name: release-dists
+          path: dist/
+
+      - name: Smoke-test the built wheel as a consumer would
+        # Deliberately a clean environment with only the wheel installed: the
+        # unit suite imports from the source tree, so it cannot catch a module
+        # missing from the wheel, absent py.typed, or a stale __version__.
+        run: |
+          uv venv .smoke-venv
+          uv pip install --python .smoke-venv/bin/python dist/*.whl
+          .smoke-venv/bin/python scripts/smoke_test.py
+
+      - name: Install test dependencies
+        run: uv sync --no-default-groups --group test
+
+      - name: Integration tests against the QPay sandbox
+        # Runs from the source tree: these verify QPay's API still behaves,
+        # which the packaging check above has already covered separately.
+        # No secrets needed -- the public sandbox merchant is the default.
+        env:
+          QPAY_RUN_LIVE_TESTS: "1"
+        run: uv run --no-sync pytest -m integration
+
   pypi-publish:
     runs-on: ubuntu-latest
     needs:
       - release-build
+      - verify
     permissions:
       # IMPORTANT: this permission is mandatory for trusted publishing
       id-token: write
