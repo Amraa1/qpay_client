@@ -1,0 +1,16 @@
+# Version updates for GitHub Actions only.
+#
+# Dependabot *security* updates work without this file and are unaffected by it.
+# Python dependencies are deliberately excluded: this is a library, so consumers
+# resolve against the ranges in pyproject.toml and never see uv.lock -- lockfile
+# bump PRs would be noise with no downstream benefit.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      actions:
+        patterns:
+          - "*"
