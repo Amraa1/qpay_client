@@ -117,6 +117,57 @@ def test_authenticate_raises_qpay_error_on_invalid_credentials(settings):
 
 
 @respx.mock
+def test_refresh_falls_back_to_full_authenticate_when_refresh_token_rejected(client, settings):
+    """
+    Mid-session: the access token expired locally, and the refresh_token that
+    /auth/refresh rejects with 401 (e.g. revoked) should fall back to a full
+    /auth/token re-authentication, not raise or recurse.
+    """
+    client._auth_state._access_expired = True
+    client._auth_state._refresh_expired = False
+
+    respx.post(f"{settings.base_url}/auth/refresh").mock(return_value=Response(401, json={"message": "expired"}))
+    respx.post(f"{settings.base_url}/auth/token").mock(
+        return_value=Response(
+            200,
+            json={
+                "access_token": "tok_REAUTH",
+                "refresh_token": "ref_REAUTH",
+                "expires_in": 3600,
+                "refresh_expires_in": 7200,
+                "token_type": "Bearer",
+                "scope": "session",
+                "not-before-policy": "1",
+                "session_state": "1",
+            },
+        )
+    )
+
+    client.authenticate()
+
+    assert client.token == "tok_REAUTH"
+
+
+@respx.mock
+def test_authenticate_raises_qpay_error_when_refresh_and_reauth_both_fail(client, settings):
+    """
+    Mid-session: both /auth/refresh and the /auth/token fallback are rejected
+    (e.g. the merchant account itself was deactivated) - this must raise a
+    plain QPayError, not recurse forever.
+    """
+    client._auth_state._access_expired = True
+    client._auth_state._refresh_expired = False
+
+    respx.post(f"{settings.base_url}/auth/refresh").mock(return_value=Response(401, json={"message": "expired"}))
+    respx.post(f"{settings.base_url}/auth/token").mock(
+        return_value=Response(401, json={"message": "AUTHENTICATION_FAILED"})
+    )
+
+    with pytest.raises(QPayError):
+        client.authenticate()
+
+
+@respx.mock
 def test_context_manager_triggers_auth_and_closes(client, settings):
     wire_auth(settings)
 
