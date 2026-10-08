@@ -1,6 +1,6 @@
 import logging
 
-from httpx import BasicAuth, Client, Response
+from httpx import BasicAuth, Client, Headers, Response
 
 from ..schemas import (
     EbarimtCreateRequest,
@@ -135,13 +135,18 @@ class QPayClient(BaseClient):
 
         self._auth_state.update(token_response)
 
-    def _refresh_access_token(self):
-        if not self._auth_state.is_access_expired(self._token_leeway):
-            return
+    def _refresh_access_token(self) -> Headers:
+        """
+        Refresh (or fully re-authenticate) and return headers built from the new token.
 
-        elif self._auth_state.is_refresh_expired(self._token_leeway):
+        Also used as the transport's on-401 hook: a real 401 from the API means the
+        server has already rejected the current token, so this must not trust the
+        local expiry clock to decide whether a refresh is needed - only whether the
+        refresh_token itself is still usable.
+        """
+        if self._auth_state.is_refresh_expired(self._token_leeway):
             self._authenticate()
-            return
+            return self.headers()
 
         response = self._request(
             "POST", "/auth/refresh", headers={"Authorization": self._auth_state.refresh_as_header()}
@@ -154,6 +159,8 @@ class QPayClient(BaseClient):
 
         else:
             self._authenticate()
+
+        return self.headers()
 
     def get_token(self) -> str:
         if not self._auth_state.has_access_token() or self._auth_state.is_refresh_expired(self._token_leeway):

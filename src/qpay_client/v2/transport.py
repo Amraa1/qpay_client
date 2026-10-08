@@ -6,14 +6,16 @@ import time
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-from httpx import AsyncClient, Client, RequestError, Response
+from httpx import AsyncClient, Client, Headers, RequestError, Response
 
 from .error import NetworkError
 from .settings import QPaySettings
 from .utils import exponential_backoff, handle_error
 
-SyncRefreshHandler = Callable[[], None]
-AsyncRefreshHandler = Callable[[], Awaitable[None]]
+# The handler may return refreshed headers to use on the replayed request
+# (e.g. a new `Authorization` value); returning None keeps the original headers.
+SyncRefreshHandler = Callable[[], Headers | None]
+AsyncRefreshHandler = Callable[[], Awaitable[Headers | None]]
 
 
 class SyncTransport:
@@ -77,7 +79,9 @@ class SyncTransport:
 
                 if response.status_code == 401 and on_unauthorized is not None:
                     self._logger.info("401 received, refreshing access token")
-                    on_unauthorized()
+                    refreshed_headers = on_unauthorized()
+                    if refreshed_headers is not None:
+                        kwargs["headers"] = refreshed_headers
                     response = self._send(method, url, **kwargs)
                     self._logger.debug("Response after refresh: %s %s", response.status_code, url)
 
@@ -185,7 +189,9 @@ class AsyncTransport:
 
                 if response.status_code == 401 and on_unauthorized is not None:
                     self._logger.info("401 received, refreshing access token")
-                    await on_unauthorized()
+                    refreshed_headers = await on_unauthorized()
+                    if refreshed_headers is not None:
+                        kwargs["headers"] = refreshed_headers
                     response = await self._send(method, url, **kwargs)
                     self._logger.debug("Response after refresh: %s %s", response.status_code, url)
 

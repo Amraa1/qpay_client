@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from httpx import AsyncClient, BasicAuth, Response
+from httpx import AsyncClient, BasicAuth, Headers, Response
 
 from ..schemas import (
     EbarimtCreateRequest,
@@ -120,11 +120,11 @@ class AsyncQPayClient(BaseClient):
         async with self._async_lock:
             await self._authenticate_nolock()
 
-    async def _refresh_access_token(self) -> None:
-        """Refresh client access. Thread safe."""
+    async def _refresh_access_token(self) -> Headers:
+        """Refresh client access and return headers built from the new token. Thread safe."""
         # locked wrapper
         async with self._async_lock:
-            await self._refresh_access_token_nolock()
+            return await self._refresh_access_token_nolock()
 
     async def _authenticate_nolock(self):
         """Authenticate the client. Not thread safe."""
@@ -141,13 +141,18 @@ class AsyncQPayClient(BaseClient):
 
         self._auth_state.update(token_response)
 
-    async def _refresh_access_token_nolock(self):
-        """Refresh client access. Not thread safe."""
-        if not self._auth_state.is_access_expired(leeway=self._token_leeway):
-            return  # access token not expired
+    async def _refresh_access_token_nolock(self) -> Headers:
+        """
+        Refresh (or fully re-authenticate) and return headers built from the new token. Not thread safe.
 
+        Also used as the transport's on-401 hook: a real 401 from the API means the
+        server has already rejected the current token, so this must not trust the
+        local expiry clock to decide whether a refresh is needed - only whether the
+        refresh_token itself is still usable.
+        """
         if self._auth_state.is_refresh_expired(leeway=self._token_leeway):
-            return await self._authenticate_nolock()
+            await self._authenticate_nolock()
+            return self.headers()
 
         # Using refresh token
         response = await self._send(
@@ -162,6 +167,8 @@ class AsyncQPayClient(BaseClient):
             self._auth_state.update(token_response)
         else:
             await self._authenticate_nolock()
+
+        return self.headers()
 
     @async_auth_required
     async def invoice_get(self, invoice_id: str) -> InvoiceGetResponse:

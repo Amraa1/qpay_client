@@ -410,7 +410,8 @@ async def test_401_triggers_refresh_and_replays_request(client, settings, monkey
 
     data = await client.invoice_get("a0b9f668-8a83-41e5-bbaf-3109e6aac600")
     assert route.call_count == 2
-    assert client.token == "tok_initial"
+    # After 401, /auth/refresh was called and the token was actually updated to tok_NEW.
+    assert client.token == "tok_NEW"
     assert data.invoice_id == "a0b9f668-8a83-41e5-bbaf-3109e6aac600"
 
 

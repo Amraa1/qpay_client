@@ -49,6 +49,34 @@ def test_sync_transport_replays_after_401(monkeypatch):
     transport.close()
 
 
+def test_sync_transport_uses_refreshed_headers_on_401_retry(monkeypatch):
+    """The replayed request after a 401 must carry the *new* Authorization header, not the stale one."""
+    transport = SyncTransport(settings=make_settings(), logger=logging.getLogger("qpay.test.sync.401.headers"))
+    monkeypatch.setattr("qpay_client.v2.transport.time.sleep", lambda *_args, **_kwargs: None)
+
+    seen_auth_headers = []
+
+    def fake_request(method, url, **kwargs):
+        seen_auth_headers.append(kwargs["headers"]["Authorization"])
+        if len(seen_auth_headers) == 1:
+            return Response(401, json={"message": "expired"})
+        return Response(200, json={"ok": True})
+
+    def refresh():
+        return httpx.Headers({"Authorization": "Bearer NEW_TOKEN"})
+
+    monkeypatch.setattr(transport.client, "request", fake_request)
+
+    response = transport.request(
+        "GET", "/invoice/123", on_unauthorized=refresh, headers={"Authorization": "Bearer OLD_TOKEN"}
+    )
+
+    assert response.status_code == 200
+    assert seen_auth_headers == ["Bearer OLD_TOKEN", "Bearer NEW_TOKEN"]
+
+    transport.close()
+
+
 def test_sync_transport_retries_network_error(monkeypatch):
     transport = SyncTransport(settings=make_settings(), logger=logging.getLogger("qpay.test.sync.network"))
     monkeypatch.setattr("qpay_client.v2.transport.time.sleep", lambda *_args, **_kwargs: None)
@@ -133,6 +161,39 @@ async def test_async_transport_retries_network_error(monkeypatch):
 
     assert response.status_code == 200
     assert calls["count"] == 2
+
+    await transport.close()
+
+
+@pytest.mark.asyncio
+async def test_async_transport_uses_refreshed_headers_on_401_retry(monkeypatch):
+    """The replayed request after a 401 must carry the *new* Authorization header, not the stale one."""
+    transport = AsyncTransport(settings=make_settings(), logger=logging.getLogger("qpay.test.async.401.headers"))
+
+    async def immediate_sleep(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr("qpay_client.v2.transport.asyncio.sleep", immediate_sleep)
+
+    seen_auth_headers = []
+
+    async def fake_request(method, url, **kwargs):
+        seen_auth_headers.append(kwargs["headers"]["Authorization"])
+        if len(seen_auth_headers) == 1:
+            return Response(401, json={"message": "expired"})
+        return Response(200, json={"ok": True})
+
+    async def refresh():
+        return httpx.Headers({"Authorization": "Bearer NEW_TOKEN"})
+
+    monkeypatch.setattr(transport.client, "request", fake_request)
+
+    response = await transport.request(
+        "GET", "/invoice/123", on_unauthorized=refresh, headers={"Authorization": "Bearer OLD_TOKEN"}
+    )
+
+    assert response.status_code == 200
+    assert seen_auth_headers == ["Bearer OLD_TOKEN", "Bearer NEW_TOKEN"]
 
     await transport.close()
 

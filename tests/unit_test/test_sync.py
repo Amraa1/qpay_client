@@ -295,8 +295,8 @@ def test_401_triggers_refresh_and_replays_request(client, settings):
 
     data = client.invoice_get("a0b9f668-8a83-41e5-bbaf-3109e6aac600")
     assert route.call_count == 2
-    # After 401, /auth/refresh was called and token updated to tok_AAA by wire_auth
-    assert client.token == "tok_initial"
+    # After 401, /auth/refresh was called and the token was actually updated to tok_AAA.
+    assert client.token == "tok_AAA"
     assert data.invoice_id == "a0b9f668-8a83-41e5-bbaf-3109e6aac600"
 
 
