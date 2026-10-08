@@ -174,8 +174,6 @@ class QPayClient(BaseClient):
 
         return self.headers()
 
-        return self.headers()
-
     def get_token(self) -> str:
         if not self._auth_state.has_access_token() or self._auth_state.is_refresh_expired(self._token_leeway):
             self._authenticate()

@@ -6,6 +6,7 @@ from httpx import Response
 # Adjust the import path to match your project layout
 from qpay_client.v2.clients.async_client import AsyncQPayClient
 from qpay_client.v2.enums import EbarimtReceiverType, InvoiceStatus, ObjectType
+from qpay_client.v2.error import QPayError
 from qpay_client.v2.schemas import InvoiceCreateSimpleRequest, Offset
 from qpay_client.v2.settings import QPaySettings
 
@@ -66,6 +67,24 @@ def client(settings, monkeypatch):
     monkeypatch.setattr(c, "_auth_state", fake)
 
     return c
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_authenticate_raises_qpay_error_on_invalid_credentials(settings):
+    """
+    A 401 from /auth/token (e.g. wrong username/password) must raise QPayError,
+    not a raw pydantic.ValidationError from parsing the error body as a token.
+    Uses a real AsyncQPayClient (not the FakeAuthState fixture) since the bug
+    only reproduces from the initial, all-zero auth state.
+    """
+    respx.post(f"{settings.base_url}/auth/token").mock(
+        return_value=Response(401, json={"message": "AUTHENTICATION_FAILED"})
+    )
+
+    client = AsyncQPayClient(settings=settings)
+    with pytest.raises(QPayError):
+        await client.authenticate()
 
 
 @pytest.mark.asyncio

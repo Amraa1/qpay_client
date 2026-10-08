@@ -23,6 +23,7 @@ from ..schemas import (
 )
 from ..settings import QPaySettings
 from ..transport import AsyncTransport
+from ..utils import handle_error
 from .base import BaseClient
 from .decorators import async_auth_required, async_poll_until_paid
 
@@ -136,6 +137,9 @@ class AsyncQPayClient(BaseClient):
                 password=self._settings.password,  # get password secret
             ),
         )
+
+        if not response.is_success:
+            handle_error(response, self._logger)
 
         token_response = TokenResponse.model_validate(response.json())
 
