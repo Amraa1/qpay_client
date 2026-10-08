@@ -1,9 +1,10 @@
 from logging import Logger
 from unittest.mock import Mock
 
+import httpx
 import pytest
 
-from qpay_client.v2.error import QPayError
+from qpay_client.v2.error import QPayError, QpayErrorDetail, QPayErrorKey
 from qpay_client.v2.utils import exponential_backoff, handle_error, safe_json
 
 
@@ -38,6 +39,18 @@ def test_handle_error_logs_and_raises(monkeypatch):
     logger.error.assert_called_once()
     assert exc.value.status_code == 500
     assert exc.value.error_key == "error occurred"
+
+
+def test_handle_error_reads_the_key_from_error_not_the_message():
+    # A real response to cancelling a paid invoice: the key is in `error`,
+    # `message` is the Mongolian text for people.
+    resp = httpx.Response(400, json={"error": "INVOICE_PAID", "message": "Нэхэмжлэл төлөгдсөн"})
+    logger = Mock(spec=Logger)
+    with pytest.raises(QPayError) as exc:
+        handle_error(resp, logger)
+    assert exc.value.status_code == 400
+    assert exc.value.error_key == QPayErrorKey.invoice_paid
+    assert exc.value.error_detail == QpayErrorDetail[QPayErrorKey.invoice_paid.value]
 
 
 def test_handle_error_with_no_message(monkeypatch):
