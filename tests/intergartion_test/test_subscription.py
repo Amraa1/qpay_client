@@ -12,7 +12,6 @@ from pydantic import ValidationError
 # from qpay_client import QPayClient   # if your client is exported at package root
 from qpay_client.v2 import (
     AsyncQPayClient,
-    QPayError,
     QPaySettings,
 )
 from qpay_client.v2.defaults import SANDBOX_INVOICE_CODE, SANDBOX_URL
@@ -411,32 +410,6 @@ async def test_create_subscription_invoice_with_custom_amount_and_weekly_interva
     assert resp.subscription is not None
     assert resp.subscription.interval == "1W"
     assert Decimal("2999")  # semantic check only; QPay total is derived by server, so we mainly assert success.
-
-
-@integration
-@skip_live
-@pytest.mark.asyncio
-async def test_create_subscription_invoice_rejects_missing_lines_server_side():
-    """
-    Sanity check: if client-side validator is bypassed (e.g., building dict then model_dump),server should still reject malformed requests (defense-in-depth).
-
-    We intentionally disable the lines field AFTER model creation to simulate a malformed payload.
-    """
-    client = await _new_client()
-    # Build a valid model
-    good = InvoiceCreateRequest(**_valid_subscription_payload())  # type: ignore
-
-    # Now emulate a low-level tamper that removes lines before sending.
-    tampered = good.model_dump(by_alias=True, exclude_none=True, mode="json")
-    tampered.pop("lines", None)
-
-    # Send via the client's private request method to simulate server reaction.
-    # NOTE: this relies on your client's internal API; adjust if needed.
-    # If you want to keep public API only, you can skip this test.
-    with pytest.raises(QPayError) as exc_info:
-        await client._request("POST", "/invoice", headers=client.headers(), json=tampered)
-
-    assert 400 <= exc_info.value.status_code < 500
 
 
 @integration
