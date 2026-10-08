@@ -103,9 +103,10 @@ def wire_auth(settings):
 @respx.mock
 def test_authenticate_raises_qpay_error_on_invalid_credentials(settings):
     """
-    A 401 from /auth/token (e.g. wrong username/password) must raise QPayError,
-    not recurse forever. Uses a real QPayClient (not the FakeAuthState fixture)
-    since the bug only reproduces from the initial, all-zero auth state.
+    Invalid credentials must raise QPayError, not recurse forever.
+
+    Uses a real QPayClient (not the FakeAuthState fixture) since the bug
+    only reproduces from the initial, all-zero auth state.
     """
     respx.post(f"{settings.base_url}/auth/token").mock(
         return_value=Response(401, json={"message": "AUTHENTICATION_FAILED"})
@@ -119,6 +120,8 @@ def test_authenticate_raises_qpay_error_on_invalid_credentials(settings):
 @respx.mock
 def test_refresh_falls_back_to_full_authenticate_when_refresh_token_rejected(client, settings):
     """
+    A rejected refresh_token should fall back to a full re-authentication.
+
     Mid-session: the access token expired locally, and the refresh_token that
     /auth/refresh rejects with 401 (e.g. revoked) should fall back to a full
     /auth/token re-authentication, not raise or recurse.
@@ -151,6 +154,8 @@ def test_refresh_falls_back_to_full_authenticate_when_refresh_token_rejected(cli
 @respx.mock
 def test_authenticate_raises_qpay_error_when_refresh_and_reauth_both_fail(client, settings):
     """
+    If refresh and the re-authenticate fallback both fail, raise QPayError once.
+
     Mid-session: both /auth/refresh and the /auth/token fallback are rejected
     (e.g. the merchant account itself was deactivated) - this must raise a
     plain QPayError, not recurse forever.
@@ -366,6 +371,66 @@ def test_401_triggers_refresh_and_replays_request(client, settings):
     # After 401, /auth/refresh was called and the token was actually updated to tok_AAA.
     assert client.token == "tok_AAA"
     assert data.invoice_id == "a0b9f668-8a83-41e5-bbaf-3109e6aac600"
+
+
+@respx.mock
+def test_401_replay_sends_the_refreshed_bearer_token(client, settings):
+    """
+    The replayed request after a 401 must carry the refreshed Authorization header.
+
+    Same "local clock still thinks the token is fresh, server 401s anyway" setup as
+    test_401_triggers_refresh_and_replays_request, but asserts on the actual
+    Authorization header of the *replayed* request instead of only the end state of
+    _auth_state - this is what the stale-headers bug got wrong even when a refresh
+    was correctly attempted.
+    """
+    wire_auth(settings)
+    client._auth_state._access_expired = False
+    client._auth_state._access = "tok_initial"
+
+    route = respx.get(f"{settings.base_url}/invoice/a0b9f668-8a83-41e5-bbaf-3109e6aac600").mock(
+        side_effect=[
+            Response(401, json={"detail": "expired"}),
+            Response(
+                200,
+                json={
+                    "invoice_id": "a0b9f668-8a83-41e5-bbaf-3109e6aac600",
+                    "invoice_status": "OPEN",
+                    "sender_invoice_no": "123456",
+                    "sender_branch_code": None,
+                    "sender_branch_data": None,
+                    "sender_staff_code": None,
+                    "sender_staff_data": None,
+                    "sender_terminal_code": None,
+                    "sender_terminal_data": None,
+                    "invoice_description": "test",
+                    "invoice_due_date": None,
+                    "enable_expiry": False,
+                    "expiry_date": None,
+                    "allow_partial": False,
+                    "minimum_amount": None,
+                    "allow_exceed": False,
+                    "maximum_amount": None,
+                    "total_amount": "1.00",
+                    "gross_amount": 1,
+                    "tax_amount": 0,
+                    "surcharge_amount": 0,
+                    "callback_url": "https://example.com/cb",
+                    "note": None,
+                    "lines": None,
+                    "transactions": None,
+                    "inputs": [],
+                },
+            ),
+        ]
+    )
+
+    client.invoice_get("a0b9f668-8a83-41e5-bbaf-3109e6aac600")
+
+    assert route.call_count == 2
+    first_call, second_call = route.calls
+    assert first_call.request.headers["authorization"] == "Bearer tok_initial"
+    assert second_call.request.headers["authorization"] == "Bearer tok_AAA"
 
 
 @respx.mock
