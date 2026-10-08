@@ -2,6 +2,7 @@ import logging
 
 from httpx import BasicAuth, Client, Headers, Response
 
+from ..error import QPayError
 from ..schemas import (
     EbarimtCreateRequest,
     EbarimtCreateResponse,
@@ -121,8 +122,16 @@ class QPayClient(BaseClient):
             DO NOT CALL THIS FUNCTION!
             The client manages the tokens.
 
+        Note:
+            Deliberately calls the transport directly (no `on_unauthorized`) rather
+            than going through `self._request()`. Attaching the on-401 refresh hook
+            to the client's own login/refresh calls would let a real 401 here (e.g.
+            wrong credentials) recurse into `_refresh_access_token()` -> `_authenticate()`
+            -> the same 401 -> ... without bound. A failed login should surface as a
+            plain `QPayError` from `transport.request()`'s own error handling instead.
+
         """
-        response = self._request(
+        response = self._transport.request(
             "POST",
             "/auth/token",
             auth=BasicAuth(
@@ -148,17 +157,22 @@ class QPayClient(BaseClient):
             self._authenticate()
             return self.headers()
 
-        response = self._request(
-            "POST", "/auth/refresh", headers={"Authorization": self._auth_state.refresh_as_header()}
-        )
-
-        if response.is_success:
+        # Deliberately calls the transport directly (no `on_unauthorized`) - see
+        # `_authenticate()`'s note on why the on-401 hook must not be attached here.
+        # A rejected refresh_token (e.g. also revoked) surfaces from the transport as
+        # a QPayError rather than an error status code, so fall back to a full
+        # re-authentication in that case too.
+        try:
+            response = self._transport.request(
+                "POST", "/auth/refresh", headers={"Authorization": self._auth_state.refresh_as_header()}
+            )
+        except QPayError:
+            self._authenticate()
+        else:
             token_response = TokenResponse.model_validate(response.json())
-
             self._auth_state.update(token_response)
 
-        else:
-            self._authenticate()
+        return self.headers()
 
         return self.headers()
 

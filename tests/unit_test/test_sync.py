@@ -6,6 +6,7 @@ from httpx import Response
 # Adjust these imports to your real package paths
 from qpay_client.v2 import QPayClient, QPaySettings
 from qpay_client.v2.enums import EbarimtReceiverType, InvoiceStatus, ObjectType
+from qpay_client.v2.error import QPayError
 from qpay_client.v2.schemas import InvoiceCreateSimpleRequest, Offset
 
 
@@ -97,6 +98,22 @@ def wire_auth(settings):
             },
         )
     )
+
+
+@respx.mock
+def test_authenticate_raises_qpay_error_on_invalid_credentials(settings):
+    """
+    A 401 from /auth/token (e.g. wrong username/password) must raise QPayError,
+    not recurse forever. Uses a real QPayClient (not the FakeAuthState fixture)
+    since the bug only reproduces from the initial, all-zero auth state.
+    """
+    respx.post(f"{settings.base_url}/auth/token").mock(
+        return_value=Response(401, json={"message": "AUTHENTICATION_FAILED"})
+    )
+
+    client = QPayClient(settings=settings)
+    with pytest.raises(QPayError):
+        client.authenticate()
 
 
 @respx.mock
